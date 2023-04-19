@@ -131,6 +131,7 @@ function draw(data) {
     var maxSud = ws.maxSud();
     maxFreq = ws.maxFreq();
 
+
     //set svg data.
     svg
         .transition()
