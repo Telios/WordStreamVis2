@@ -14,7 +14,9 @@ var categories = ["person", "location", "organization", "miscellaneous"];
 
 var fileName;
 
-var opacity, layerPath, maxFreq;
+//var opacity, layerPath, maxFreq;
+var opacity, maxFreq;
+
 
 var axisGroup = svg.append('g').attr("id", "axisGroup");
 var xGridlinesGroup = svg.append('g').attr("id", "xGridlinesGroup");
@@ -105,252 +107,242 @@ function loadNewData(event) {
 }
 
 
-function drawWordStream(ws, mainGroup, interpolation, font) {
 
-    var boxes = ws.boxes();
-    var minSud = ws.minSud();
-    var maxSud = ws.maxSud();
-    maxFreq = ws.maxFreq();
+class WordStream {
 
+    container = null;
+    maxFreq = null;
+    wordStreamG = null;
+    font = null;
+    area = null;
+    interpolation = "cardinal";
+    wordStream = null;
 
-    var area = d3.svg.area()
-        .interpolate(interpolation)
-        .x(function (d) {
-            return (d.x);
-        })
-        .y0(function (d) {
-            return d.y0;
-        })
-        .y1(function (d) {
-            return (d.y0 + d.y);
-        });
-
-    //Main group
-    //mainGroup.attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
-    var wordStreamG = mainGroup.append('g').attr("id", "wordStreamG");
-
-// =============== Get BOUNDARY and LAYERPATH ===============
-    const lineCardinal = d3.svg.line()
-        .x(function (d) {
-            return d.x;
-        })
-        .y(function (d) {
-            return d.y;
-        })
-        .interpolate("cardinal");
-
-    var boundary = [];
-    for (var i = 0; i < boxes.layers[0].length; i++) {
-        var tempPoint = Object.assign({}, boxes.layers[0][i]);
-        tempPoint.y = tempPoint.y0;
-        boundary.push(tempPoint);
+    constructor(container, font) {
+        this.container = container;
+        this.wordStreamG = this.container.append('g');
+        this.font = font;
     }
 
-    for (var i = boxes.layers[boxes.layers.length - 1].length - 1; i >= 0; i--) {
-        var tempPoint2 = Object.assign({}, boxes.layers[boxes.layers.length - 1][i]);
-        tempPoint2.y = tempPoint2.y + tempPoint2.y0;
-        boundary.push(tempPoint2);
-    }       // Add next (8) elements
+    draw(data, width, height) {
+        // wordstream has side effects on the passed data (e.g. adds word positions and sizes)
+        let clonedDataObject = structuredClone(data);
+        this.wordStream = d3.layout.wordStream()
+            .size([width, height])
+            .fontScale(d3.scale.linear())
+            .minFontSize(globalMinFont)
+            .maxFontSize(globalMaxFont)
+            .data(clonedDataObject)
+            .flag(globalFlag);
 
-    var lenb = boundary.length;
+        this.drawSingleWordStream(this.wordStream)
+    }
 
-    // Get the string for path
+    drawSingleWordStream(ws) {
 
-    var combined = lineCardinal(boundary.slice(0, lenb / 2))
-        + "L"
-        + lineCardinal(boundary.slice(lenb / 2, lenb))
-            .substring(1, lineCardinal(boundary.slice(lenb / 2, lenb)).length)
-        + "Z";
-    // ============= Get LAYER PATH ==============
-
-    layerPath = mainGroup.append("path")
-        .attr("d", combined)
-        .attr("visibility", "hidden")
-        .attr("class", "layerpath")
-        .attr({
-            'fill-opacity': 1,
-            'stroke-opacity': 0,
-        });
-    // draw curves
-    var topics = boxes.topics;
-
-    var curve = mainGroup.selectAll('.curve').data(boxes.layers);
-
-    curve.exit().remove();
-
-    curve.enter()
-        .append('path')
-        .attr('d', area)
-        .style('fill', function (d, i) {
-            return color(i);
-        })
-        .attr({
-            "class": "curve",
-            'fill-opacity': 0,
-            stroke: 'black',
-            'stroke-width': 0,
-            topic: function (d, i) {
-                return topics[i];
-            }
-        });
-
-    curve.attr("d", area)
-        .style('fill', function (d, i) {
-            return color(i);
-        })
-        .attr({
-            'fill-opacity': 0,
-            stroke: 'black',
-            'stroke-width': 0,
-            topic: function (d, i) {
-                return topics[i];
-            }
-        });
-
-
-    var allWords = [];
-    d3.map(boxes.data, function (row) {
-        boxes.topics.forEach(topic => {
-            allWords = allWords.concat(row.words[topic]);
-        });
-    });
-
-    allW = JSON.parse(JSON.stringify(allWords));
-
-    opacity = d3.scale.log()
-        .domain([minSud, maxSud])
-        .range([0.4, 1]);
-
-    var lineScale;
-    if (fileName.indexOf("Huffington") >= 0) {
-        d3.json("data/linksHuff2012.json", function (error, rawLinks) {
-            const threshold = 5;
-            const links = rawLinks.filter(d => d.weight > threshold);
-            var isRel = document.getElementById("rel").checked;
-
-            links.forEach(d => {
-                d.sourceID = d.sourceID.split(".").join("_").split(" ").join("_");
-                d.targetID = d.targetID.split(".").join("_").split(" ").join("_");
-            });
-            let visibleLinks = [];
-
-            // select only links with: word place = true and have same id
-            links.forEach(d => {
-                let s = allWords.find(w => (w.id === d.sourceID) && (w.placed === true));
-                let t = allWords.find(w => (w.id === d.targetID) && (w.placed === true));
-                if ((s !== undefined) && (t !== undefined)) {
-                    visibleLinks.push({
-                        sourceX: s.x,
-                        sourceY: s.y,
-                        targetX: t.x,
-                        targetY: t.y,
-                        weight: d.weight,
-                        sourceID: d.sourceID,
-                        targetID: d.targetID,
-                        id: d.sourceID + "_" + d.targetID
-                    });
-                }
-            });
-
-            lineScale = d3.scale.linear()
-                .domain(d3.extent(visibleLinks, d => d.weight))
-                .range([0.5, 3]);
-
-            opacScale = d3.scale.linear()
-                .domain(d3.extent(visibleLinks, d => d.weight))
-                .range([0.5, 1]);
-
-            var connection = mainGroup.selectAll(".connection").data(visibleLinks, d => d.id);
-            connection.exit().remove();
-
-            connection.enter()
-                .append("line")
-                .attr("class", "connection");
-
-            connection.transition()
-                .duration(800)
-                .attr("opacity", isRel ? 1 : 0)
-                .attr({
-                    "x1": d => d.sourceX,
-                    "y1": d => d.sourceY,
-                    "x2": d => d.targetX,
-                    "y2": d => d.targetY,
-                    "stroke": "#444444",
-                    "stroke-opacity": d => opacScale(d.weight),
-                    "stroke-width": d => lineScale(d.weight)
-                });
-            drawWords();
-        });
-    } else drawWords();
+        let boxes = ws.boxes();
+        let minSud = ws.minSud();
+        let maxSud = ws.maxSud();
+        this.maxFreq = ws.maxFreq(); //TODO per (single!) stream
     
-    function drawWords() {
+        this.area = d3.svg.area()
+            .interpolate(this.interpolation)
+            .x(d => d.x)
+            .y0(d => d.y0)
+            .y1(d => d.y0 + d.y);
+    
+        //Main group
+        //mainGroup.attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
+        //var wordStreamG = mainGroup.append('g').attr("id", "wordStreamG");
+    
+    // =============== Get BOUNDARY and LAYERPATH ===============
+        const lineCardinal = d3.svg.line()
+            .x(d => d.x)
+            .y(d => d.y)
+            .interpolate("cardinal");
+    
+        let boundary = [];
+        for (let i = 0; i < boxes.layers[0].length; i++) {
+            let tempPoint = Object.assign({}, boxes.layers[0][i]);
+            tempPoint.y = tempPoint.y0;
+            boundary.push(tempPoint);
+        }
+    
+        for (let i = boxes.layers[boxes.layers.length - 1].length - 1; i >= 0; i--) {
+            let tempPoint2 = Object.assign({}, boxes.layers[boxes.layers.length - 1][i]);
+            tempPoint2.y = tempPoint2.y + tempPoint2.y0;
+            boundary.push(tempPoint2);
+        }       // Add next (8) elements
+    
+        let lenb = boundary.length;
+    
+        // Get the string for path
+    
+        let combined = lineCardinal(boundary.slice(0, lenb / 2))
+            + "L"
+            + lineCardinal(boundary.slice(lenb / 2, lenb))
+                .substring(1, lineCardinal(boundary.slice(lenb / 2, lenb)).length)
+            + "Z";
+        // ============= Get LAYER PATH ==============
+    
+        let layerPath = this.container.append("path")
+            .attr("d", combined)
+            .attr("visibility", "hidden")
+            .attr("class", "layerpath")
+            .attr({
+                'fill-opacity': 1,
+                'stroke-opacity': 0,
+            });
+        // draw curves
+        var topics = boxes.topics;
+    
+        var curve = this.container.selectAll('.curve').data(boxes.layers);
+    
+        curve.exit().remove();
+    
+        curve.enter()
+            .append('path')
+            .attr('d', this.area)
+            .style('fill', (d, i) => color(i))
+            .attr({
+                "class": "curve",
+                'fill-opacity': 0.5,
+                stroke: 'black',
+                'stroke-width': 0,
+                topic: (d, i) => topics[i],
+            });
+    
+        curve.attr("d", this.area)
+            .style('fill', (d, i) => color(i))
+            .attr({
+                'fill-opacity': 0,
+                stroke: 'black',
+                'stroke-width': 0,
+                topic: (d, i) => topics[i],
+            });
+    
+    
+        var allWords = [];
+        d3.map(boxes.data, function (row) {
+            boxes.topics.forEach(topic => {
+                allWords = allWords.concat(row.words[topic]);
+            });
+        });
+    
+        allW = JSON.parse(JSON.stringify(allWords));
+    
+        opacity = d3.scale.log()
+            .domain([minSud, maxSud])
+            .range([0.4, 1]);
+    
+        var lineScale;
+        if (fileName.indexOf("Huffington") >= 0) {
+            d3.json("data/linksHuff2012.json", function (error, rawLinks) {
+                const threshold = 5;
+                const links = rawLinks.filter(d => d.weight > threshold);
+                var isRel = document.getElementById("rel").checked;
+    
+                links.forEach(d => {
+                    d.sourceID = d.sourceID.split(".").join("_").split(" ").join("_");
+                    d.targetID = d.targetID.split(".").join("_").split(" ").join("_");
+                });
+                let visibleLinks = [];
+    
+                // select only links with: word place = true and have same id
+                links.forEach(d => {
+                    let s = allWords.find(w => (w.id === d.sourceID) && (w.placed === true));
+                    let t = allWords.find(w => (w.id === d.targetID) && (w.placed === true));
+                    if ((s !== undefined) && (t !== undefined)) {
+                        visibleLinks.push({
+                            sourceX: s.x,
+                            sourceY: s.y,
+                            targetX: t.x,
+                            targetY: t.y,
+                            weight: d.weight,
+                            sourceID: d.sourceID,
+                            targetID: d.targetID,
+                            id: d.sourceID + "_" + d.targetID
+                        });
+                    }
+                });
+    
+                lineScale = d3.scale.linear()
+                    .domain(d3.extent(visibleLinks, d => d.weight))
+                    .range([0.5, 3]);
+    
+                opacScale = d3.scale.linear()
+                    .domain(d3.extent(visibleLinks, d => d.weight))
+                    .range([0.5, 1]);
+    
+                var connection = this.container.selectAll(".connection").data(visibleLinks, d => d.id);
+                connection.exit().remove();
+    
+                connection.enter()
+                    .append("line")
+                    .attr("class", "connection");
+    
+                connection.transition()
+                    .duration(800)
+                    .attr("opacity", isRel ? 1 : 0)
+                    .attr({
+                        "x1": d => d.sourceX,
+                        "y1": d => d.sourceY,
+                        "x2": d => d.targetX,
+                        "y2": d => d.targetY,
+                        "stroke": "#444444",
+                        "stroke-opacity": d => opacScale(d.weight),
+                        "stroke-width": d => lineScale(d.weight)
+                    });
+                this.drawWords(allWords, topics);
+            });
+        } else this.drawWords(allWords, topics);
+        
+    }
+
+    drawWords(allWords, topics) {
         var prevColor;
 
-        var texts = mainGroup.selectAll('.word').data(allWords, d => d.id);
+        var texts = this.container.selectAll('.word').data(allWords, d => d.id); //sets __data__ property
 
         texts.exit().remove();
 
         var textEnter = texts.enter().append('g')
-            .attr({
-                transform: function (d) {
-                    return 'translate(' + d.x + ', ' + d.y + ')rotate(' + d.rotate + ')';
-                }
-            })
+            .attr("transform", (d) => 'translate(' + d.x + ', ' + d.y + ')rotate(' + d.rotate + ')')
             .attr("class", "word")
-            .append('text')
+            .append('text');
 
         textEnter
-            .text(function (d) {
-                return d.text;
-            })
+            .text((d) => d.text)
             .attr({
                 "id": d => d.id,
                 "class": "textData",
-                'font-family': font,
-                'font-size': function (d) {
-                    return d.fontSize;
-                },
-                "fill": function (d, i) {
-                    return color(categories.indexOf(d.topic));
-                },
-                "fill-opacity": function (d) {
-                    return opacity(d.sudden);
-                },
+                'font-family': this.font,//TODO
+                'font-size': (d) => d.fontSize,
+                "fill": (d) => color(categories.indexOf(d.topic)),
+                "fill-opacity": (d) => opacity(d.sudden),
                 'text-anchor': 'middle',
                 'alignment-baseline': 'middle',
-                topic: function (d) {
-                    return d.topic;
-                },
-                visibility: function (d) {
-                    return d.placed ? "visible" : "hidden";
-                }
+                topic: (d) => d.topic,
+                visibility: (d) => d.placed ? "visible" : "hidden",
             });
 
         texts.transition().duration(800)
-            .attr({
-                transform: function (d) {
-                    return 'translate(' + d.x + ', ' + d.y + ')rotate(' + d.rotate + ')';
-                }
-            })
+            .attr("transform", (d) => 'translate(' + d.x + ', ' + d.y + ') rotate(' + d.rotate + ')')
             .select("text")
-            .attr('font-size', function (d) {
-                return d.fontSize;
-            })
             .attr({
-                visibility: function (d) {
-                    return d.placed ? "visible" : "hidden";
-                }
+                "font-size": (d) => d.fontSize,
+                visibility: (d) => d.placed ? "visible" : "hidden"
             });
 
         // texts.style("text-decoration", "underline");
 
-        mainGroup.selectAll(".connection").on("mouseover", function () {
+        this.container.selectAll(".connection").on("mouseover", function () {
             var thisLink = d3.select(this);
             thisLink.style('cursor', 'crosshair');
             // in order to select by byid, the id must not have space
-            var sourceText = mainGroup.select("#" + thisLink[0][0].__data__.sourceID);
+            var sourceText = this.container.select("#" + thisLink[0][0].__data__.sourceID);
             var prevSourceColor = sourceText.attr("fill");
-            var targetText = mainGroup.select("#" + thisLink[0][0].__data__.targetID);
+            var targetText = this.container.select("#" + thisLink[0][0].__data__.targetID);
             var prevTargetColor = targetText.attr("fill");
 
             thisLink.attr("stroke-width", 4);
@@ -368,11 +360,11 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
             });
         });
 
-        mainGroup.selectAll(".connection").on("mouseout", function () {
+        this.container.selectAll(".connection").on("mouseout", function () {
             var thisLink = d3.select(this);
             thisLink.style('cursor', 'crosshair');
-            var sourceText = mainGroup.select("#" + thisLink[0][0].__data__.sourceID);
-            var targetText = mainGroup.select("#" + thisLink[0][0].__data__.targetID);
+            var sourceText = this.container.select("#" + thisLink[0][0].__data__.sourceID);
+            var targetText = this.container.select("#" + thisLink[0][0].__data__.targetID);
 
             thisLink.attr("stroke-width", lineScale(thisLink[0][0].__data__.weight));
 
@@ -388,13 +380,13 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
         });
 
         //Highlight
-        mainGroup.selectAll('.textData').on('mouseenter', function () {
-            var thisText = d3.select(this);
+        this.container.selectAll('.textData').on('mouseenter', () => {
+            var thisText = d3.select(d3.event.target); //d3 4.13 does not get passed the event, d3.event has to be used
             thisText.style('cursor', 'pointer');
             prevColor = thisText.attr('fill');
             var text = thisText.text();
             var topic = thisText.attr('topic');
-            var allTexts = mainGroup.selectAll('.textData').filter(t => {
+            var allTexts = this.container.selectAll('.textData').filter(t => {
                 return t && t.text === text && t.topic === topic;
             });
             allTexts.attr({
@@ -402,12 +394,12 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
                 'stroke-width': 1
             });
         });
-        mainGroup.selectAll('.textData').on('mouseout', function () {
-            var thisText = d3.select(this);
+        this.container.selectAll('.textData').on('mouseout', () => {
+            var thisText = d3.select(d3.event.target); //d3 4.13 does not get passed the event, d3.event has to be used
             thisText.style('cursor', 'default');
             var text = thisText.text();
             var topic = thisText.attr('topic');
-            var allTexts = mainGroup.selectAll('.textData').filter(t => {
+            var allTexts = this.container.selectAll('.textData').filter(t => {
                 return t && !t.cloned && t.text === text && t.topic === topic;
             });
             allTexts.attr({
@@ -416,25 +408,18 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
             });
         });
         //Click
-        mainGroup.selectAll('.textData').on('click', function () {
-            var thisText = d3.select(this);
+        this.container.selectAll('.textData').on('click', () => {
+            var thisText = d3.select(d3.event.target); //d3 4.13 does not get passed the event, d3.event has to be used
             var text = thisText.text();
             var topic = thisText.attr('topic');
-            var allTexts = mainGroup.selectAll('.textData').filter(t => {
+            var allTexts = this.container.selectAll('.textData').filter(t => {
                 return t && t.text === text && t.topic === topic;
             });
             //Select the data for the stream layers
-            var streamLayer = d3.select("path[topic='" + topic + "']")[0][0].__data__;
-            //Push all points
-            var points = Array();
-            //Initialize all points
-            streamLayer.forEach(elm => {
-                points.push({
-                    x: elm.x,
-                    y0: elm.y0 + elm.y,
-                    y: 0//zero as default
-                });
-            });
+            var streamLayer = this.container.selectAll("path[topic='" + topic + "']")[0][0].__data__; //TODO
+            //Initialize points
+            var points = streamLayer.map((elem) => { return {x: elem.x, y0: elem.y0 + elem.y, y: 0}});
+
             allTexts[0].forEach(t => {
                 var data = t.__data__;
                 var fontSize = data.fontSize;
@@ -447,7 +432,7 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
                 var clonedNode = t.cloneNode(true);
                 d3.select(clonedNode).attr({
                     visibility: "visible",
-                    stroke: 'none',
+                    stroke: 'black',
                     'stroke-size': 0,
                 });
                 var clonedParentNode = t.parentNode.cloneNode(false);
@@ -458,18 +443,16 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
                     cloned: true,
                     topic: topic
                 }).transition().duration(300).attr({
-                    transform: function (d, i) {
-                        return 'translate(' + thePoint.x + ',' + (thePoint.y0 + thePoint.y - fontSize / 2) + ')';
-                    },
+                    transform: (d, i) => 'translate(' + thePoint.x + ',' + (thePoint.y0 + thePoint.y - fontSize / 2) + ')',
                 });
             });
             //Add the first and the last points
             points[0].y = points[1].y;//First point
             points[points.length - 1].y = points[points.length - 2].y;//Last point
             //Append stream
-            wordStreamG.append('path')
+            this.wordStreamG.append('path')
                 .datum(points)
-                .attr('d', area)
+                .attr('d', this.area)
                 .style('fill', prevColor)
                 .attr({
                     'fill-opacity': prevColor,
@@ -479,124 +462,150 @@ function drawWordStream(ws, mainGroup, interpolation, font) {
                     wordStream: true
                 });
             //Hide all other texts
-            var allOtherTexts = mainGroup.selectAll('.textData').filter(t => {
+            var allOtherTexts = this.container.selectAll('.textData').filter(t => {
                 return t && !t.cloned && t.topic === topic;
             });
             allOtherTexts.attr('visibility', 'hidden');
         });
         topics.forEach(topic => {
-            d3.select("path[topic='" + topic + "']").on('click', function () {
-                mainGroup.selectAll('.textData').filter(t => {
-                    return t && !t.cloned && t.placed && t.topic === topic;
-                }).attr({
-                    visibility: 'visible'
-                });
+            //d3.select("path[topic='" + topic + "']").on('click', function () {
+            this.container.selectAll("path[topic='" + topic + "']").on('click', () => {
+                this.container.selectAll('.textData')
+                    .filter(t => t && !t.cloned && t.placed && t.topic === topic)
+                    .attr("visibility", 'visible');
                 //Remove the cloned element
-                document.querySelectorAll("g[cloned='true'][topic='" + topic + "']").forEach(node => {
-                    node.parentNode.removeChild(node);
-                });
+                this.container.selectAll("g[cloned='true'][topic='" + topic + "']").remove()
                 //Remove the added path for it
-                document.querySelectorAll("path[wordStream='true'][topic='" + topic + "']").forEach(node => {
-                    node.parentNode.removeChild(node);
-                });
+                this.container.selectAll("path[wordStream='true'][topic='" + topic + "']").remove()
             });
 
         });
+    }
 
-    };
 }
 
-function drawGridAndAxis(dates, margins, width, height, axisPadding, legendHeight) {
-    var xAxisScale = d3.scale.ordinal().domain(dates).rangeBands([0, width]);
-    var xAxis = d3.svg.axis().orient('bottom').scale(xAxisScale);
 
-    axisGroup.attr('transform', 'translate(' + (margins.left) + ',' + (height + margins.top + axisPadding + legendHeight) + ')');
-    var axisNodes = axisGroup.call(xAxis);
-    styleAxis(axisNodes);
-
-    //Display the vertical gridline
-    var xGridlineScale = d3.scale.ordinal().domain(d3.range(0, dates.length + 1)).rangeBands([0, width + width / dates.length]);
-    var xGridlinesAxis = d3.svg.axis().orient('bottom').scale(xGridlineScale);
-
-    xGridlinesGroup.attr('transform', 'translate(' + (margins.left - width / dates.length / 2) + ',' + (height + margins.top + axisPadding + legendHeight + margins.bottom) + ')');
-    var gridlineNodes = xGridlinesGroup.call(xGridlinesAxis.tickSize(-height - axisPadding - legendHeight - margins.bottom, 0, 0).tickFormat(''));
-    styleGridlineNodes(gridlineNodes);
-}
-
-function drawLegend(topics, xPos, yPos, legendFontSize) {
-    //Build the legends
-    legendGroup.attr('transform', 'translate(' + xPos + ',' + yPos + ')');
-    var legendNodes = legendGroup.selectAll('g').data(topics).enter().append('g')
-        .attr('transform', function (d, i) {
-            return 'translate(' + 10 + ',' + (i * legendFontSize) + ')';
-        });
-    legendNodes.append('circle').attr({
-        r: 5,
-        fill: function (d, i) {
-            return color(i);
-        },
-        'fill-opacity': 1,
-        stroke: 'black',
-        'stroke-width': .5,
-    });
-    legendNodes.append('text').text(function (d) {
-        return d;
-    }).attr({
-        'font-size': legendFontSize,
-        'alignment-baseline': 'middle',
-        dx: 8
-    });
-}
-
-//todo: in single svg, draw multiple word streams in different svg groups (<g>)
-
-// uses public variables:
-//  categories (for calculating legend height)
-//  globalWidth, globalHeight for calculating width/height of wordstream
-//  globalMinFont, globalMaxFont, globalFlag
-//  svg for rendering WordStream to
-function draw(data) {
+class MultiWordStream {
 
     //Layout data
-    var font = "Arial";
-    var interpolation = "cardinal";
-    const axisPadding = 10;
-    const legendFontSize = 12;
-    const legendOffset = 10;
-    var legendHeight = categories.length * legendFontSize;
+    font = "Arial";
+    interpolation = "cardinal";
+    axisPadding = 10;
+    legendFontSize = 12;
+    legendOffset = 10;
+    legendHeight = categories.length * this.legendFontSize;
+    margins = {left: 20, top: 20, right: 10, bottom: 30};
 
+    wordStreams = null;
+
+    drawLegend(topics, xPos, yPos) {
+        //Build the legends
+        legendGroup.attr('transform', 'translate(' + xPos + ',' + yPos + ')'); //TODO
+        var legendNodes = legendGroup.selectAll('g').data(topics).enter().append('g')
+            .attr('transform', (d, i) => 'translate(' + 10 + ',' + (i * this.legendFontSize) + ')');
+        legendNodes.append('circle')
+            .attr({
+                r: 5,
+                fill: (d, i) => color(i),
+                'fill-opacity': 1,
+                stroke: 'black',
+                'stroke-width': .5,
+            });
+        legendNodes.append('text')
+            .text((d) => d)
+            .attr({
+            'font-size': this.legendFontSize,
+            'alignment-baseline': 'middle',
+            dx: 8
+        });
+    }
+
+    drawGridAndAxis(dates, width, height) {
+        var xAxisScale = d3.scale.ordinal().domain(dates).rangeBands([0, width]);
+        var xAxis = d3.svg.axis().orient('bottom').scale(xAxisScale);
     
-    const margins = {left: 20, top: 20, right: 10, bottom: 30};
-    var width = globalWidth - (margins.left + margins.top);
-    var height = globalHeight / selectedDatasets.length - (+margins.top + margins.bottom + axisPadding + legendHeight);
+        axisGroup.attr('transform', 'translate(' + (this.margins.left) + ',' + (height + this.margins.top + this.axisPadding + this.legendHeight) + ')');
+        var axisNodes = axisGroup.call(xAxis);
+        MultiWordStream.styleAxis(axisNodes);
+    
+        //Display the vertical gridline
+        var xGridlineScale = d3.scale.ordinal().domain(d3.range(0, dates.length + 1)).rangeBands([0, width + width / dates.length]);
+        var xGridlinesAxis = d3.svg.axis().orient('bottom').scale(xGridlineScale);
+    
+        xGridlinesGroup.attr('transform', 'translate(' + (this.margins.left - width / dates.length / 2) + ',' + (height + this.margins.top + this.axisPadding + this.legendHeight + this.margins.bottom) + ')');
+        var gridlineNodes = xGridlinesGroup.call(xGridlinesAxis.tickSize(-height - this.axisPadding - this.legendHeight - this.margins.bottom, 0, 0).tickFormat(''));
+        MultiWordStream.styleGridlineNodes(gridlineNodes);
+    }
 
-    var padding = 10;
+    static styleAxis(axisNodes) {
+        axisNodes.selectAll('.domain').attr({
+            fill: 'none'
+        });
+        axisNodes.selectAll('.tick line').attr({
+            fill: 'none',
+        });
+        axisNodes.selectAll('.tick text').attr({
+            'font-family': 'serif',
+            'font-size': 15
+        });
+    }
+    
+    static styleGridlineNodes(gridlineNodes) {
+        gridlineNodes.selectAll('.domain').attr({
+            fill: 'none',
+            stroke: 'none'
+        });
+        gridlineNodes.selectAll('.tick line').attr({
+            fill: 'none',
+            'stroke-width': 0.7,
+            stroke: 'lightgray'
+        });
+    }
 
-    // append one <g> per wordstream to render
-    let groups = ["A", "B", "C", "D"];
+    // uses public variables:
+    //  categories (for calculating legend height)
+    //  globalWidth, globalHeight for calculating width/height of wordstream
+    //  globalMinFont, globalMaxFont, globalFlag
+    draw(dataByGroup) {
+            
+        let groups = Object.keys(dataByGroup);
 
-    let wordStreamContainers = d3.select("#mainsvg") //could use global variable svg instead
-        .selectAll("g.word-stream-class")
-        .data(groups);
-    wordStreamContainers.enter()
-        .append("g")
-        .attr("class", "word-stream-class")
-        .attr("id", (_, index) => "word-stream-" + index)
-        .attr("transform", (_, index) => "translate(" + margins.left + "," + (margins.top + index * (height + padding)) + ")");
-    wordStreamContainers.exit()
-        .remove();
+        var width = globalWidth - (this.margins.left + this.margins.right); //TODO why top?
+        var singleWordStreamHeight = (globalHeight - (+this.margins.top + this.margins.bottom + this.axisPadding + this.legendHeight)) / groups.length;
 
-    var ws = d3.layout.wordStream()
-        .size([width, height])
-        .fontScale(d3.scale.linear())
-        .minFontSize(globalMinFont)
-        .maxFontSize(globalMaxFont)
-        .data(data)
-        .flag(globalFlag)
-    // .font(font)
-    // .interpolate(interpolation)
-    // .fontScale(d3.scale.linear())
-    ;
+        let wordStreamContainers = d3.select("g#main")
+            .selectAll("g.word-stream-class")
+            .data(groups);
+
+        wordStreamContainers.enter()
+            .append("g")
+            .attr("class", "word-stream-class")
+            .attr("id", (groupLabel, index) => "word-stream-" + groupLabel)
+            .attr("transform", (_, index) => "translate(" + this.margins.left + "," + (this.margins.top + index * singleWordStreamHeight) + ")");
+        wordStreamContainers.exit()
+            .remove();
+
+        this.wordStreams = groups.map((groupLabel) => {
+            let wordStreamContainer = d3.select("#word-stream-" + groupLabel);
+            let wordStream = new WordStream(wordStreamContainer, this.font);
+            wordStream.draw(dataByGroup[groupLabel], width, singleWordStreamHeight);
+            return wordStream;
+        });
+        
+        let dates = dataByGroup[groups[0]].map(row => row.date); //for x axis
+        let topics = Object.keys(dataByGroup[groups[0]][0].words); //for legend
+
+        let gridHeight = globalHeight - (this.margins.top + this.margins.bottom + this.axisPadding + this.legendHeight); //for vertical lines
+        let legendY = globalHeight - (this.margins.top + this.legendHeight + this.legendOffset);
+
+        this.drawGridAndAxis(dates, width, gridHeight);
+        this.drawLegend(topics, this.margins.left, legendY);
+
+        spinner.stop();
+    }
+}
+
+function draw(data) {
 
     //set svg data.
     svg
@@ -607,44 +616,12 @@ function draw(data) {
             height: globalHeight,
         });
 
-    for (let i = 0; i < groups.length; i++) {
-        drawWordStream(ws, d3.select("#word-stream-" + i), interpolation, font); // TODO
-    }
+    let dataByGroup = {"A": data, "B": data, "D": data};
 
-    let boxes = ws.boxes();
-    let dates = boxes.data.map(row => row.date); //for x axis
-    let gridHeight = globalHeight - (+margins.top + margins.bottom + axisPadding + legendHeight); //for vertical lines
-    let topics = boxes.topics; //for legend
+    let multiWordStream = new MultiWordStream();
+    multiWordStream.draw(dataByGroup);
 
-    let legendY = globalHeight - (+margins.top + legendHeight + legendOffset); //for vertical lines
-
-    drawGridAndAxis(dates, margins, width, gridHeight, axisPadding, legendHeight);
-    drawLegend(topics, margins.left, legendY, legendFontSize);
 
     spinner.stop();
-}
 
-function styleAxis(axisNodes) {
-    axisNodes.selectAll('.domain').attr({
-        fill: 'none'
-    });
-    axisNodes.selectAll('.tick line').attr({
-        fill: 'none',
-    });
-    axisNodes.selectAll('.tick text').attr({
-        'font-family': 'serif',
-        'font-size': 15
-    });
-}
-
-function styleGridlineNodes(gridlineNodes) {
-    gridlineNodes.selectAll('.domain').attr({
-        fill: 'none',
-        stroke: 'none'
-    });
-    gridlineNodes.selectAll('.tick line').attr({
-        fill: 'none',
-        'stroke-width': 0.7,
-        stroke: 'lightgray'
-    });
 }
