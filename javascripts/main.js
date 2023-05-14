@@ -617,9 +617,20 @@ class MultiWordStream {
         var width = globalWidth - (this.margins.left + this.margins.right + this.yAxisLabelWidth); //TODO why top?
         var singleWordStreamHeight = (globalHeight - (+this.margins.top + this.margins.bottom + this.axisPadding + this.legendHeight + this.wordStreamSpacing * (groups.length - 1))) / groups.length;
 
+        // d3 version used does not have functionality for update: no merge, no join
+        // - need duplicate code for update/enter
+        // TODO consider updating d3 to a newer version
         let wordStreamContainers = d3.select("g#main")
             .selectAll("g.word-stream-class")
-            .data(groups);
+            .data(groups)
+            .attr("id", (groupLabel, index) => "word-stream-" + groupLabel)
+            .attr("transform", (_, index) => "translate("
+                + (this.margins.left + this.yAxisLabelWidth) + ","
+                + (this.margins.top + index * (singleWordStreamHeight + this.wordStreamSpacing))
+                + ")");
+
+        wordStreamContainers.exit()
+            .remove();
 
         wordStreamContainers.enter()
             .append("g")
@@ -629,9 +640,6 @@ class MultiWordStream {
                 + (this.margins.left + this.yAxisLabelWidth) + ","
                 + (this.margins.top + index * (singleWordStreamHeight + this.wordStreamSpacing))
                 + ")");
-
-        wordStreamContainers.exit()
-            .remove();
 
         this.wordStreams = groups.map((groupLabel) => {
             let wordStreamContainer = d3.select("#word-stream-" + groupLabel);
