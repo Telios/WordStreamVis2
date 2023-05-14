@@ -494,7 +494,9 @@ class MultiWordStream {
     legendFontSize = 12;
     legendOffset = 10;
     legendHeight = categories.length * this.legendFontSize;
-    margins = {left: 20, top: 20, right: 10, bottom: 30};
+    margins = {left: 10, top: 20, right: 10, bottom: 30};
+    yAxisLabelWidth = 30;
+    wordStreamSpacing = 10;
 
     wordStreams = null;
 
@@ -502,7 +504,7 @@ class MultiWordStream {
         //Build the legends
         legendGroup.attr('transform', 'translate(' + xPos + ',' + yPos + ')'); //TODO
         var legendNodes = legendGroup.selectAll('g').data(topics).enter().append('g')
-            .attr('transform', (d, i) => 'translate(' + 10 + ',' + (i * this.legendFontSize) + ')');
+            .attr('transform', (d, i) => 'translate(' + (this.margins.left + this.yAxisLabelWidth) + ',' + (i * this.legendFontSize) + ')');
         legendNodes.append('circle')
             .attr({
                 r: 5,
@@ -524,7 +526,7 @@ class MultiWordStream {
         var xAxisScale = d3.scale.ordinal().domain(dates).rangeBands([0, width]);
         var xAxis = d3.svg.axis().orient('bottom').scale(xAxisScale);
     
-        axisGroup.attr('transform', 'translate(' + (this.margins.left) + ',' + (height + this.margins.top + this.axisPadding + this.legendHeight) + ')');
+        axisGroup.attr('transform', 'translate(' + (this.margins.left + this.yAxisLabelWidth) + ',' + (height + this.margins.top + this.axisPadding + this.legendHeight) + ')');
         var axisNodes = axisGroup.call(xAxis);
         MultiWordStream.styleAxis(axisNodes);
     
@@ -532,7 +534,7 @@ class MultiWordStream {
         var xGridlineScale = d3.scale.ordinal().domain(d3.range(0, dates.length + 1)).rangeBands([0, width + width / dates.length]);
         var xGridlinesAxis = d3.svg.axis().orient('bottom').scale(xGridlineScale);
     
-        xGridlinesGroup.attr('transform', 'translate(' + (this.margins.left - width / dates.length / 2) + ',' + (height + this.margins.top + this.axisPadding + this.legendHeight + this.margins.bottom) + ')');
+        xGridlinesGroup.attr('transform', 'translate(' + (this.margins.left + this.yAxisLabelWidth - width / dates.length / 2) + ',' + (height + this.margins.top + this.axisPadding + this.legendHeight + this.margins.bottom) + ')');
         var gridlineNodes = xGridlinesGroup.call(xGridlinesAxis.tickSize(-height - this.axisPadding - this.legendHeight - this.margins.bottom, 0, 0).tickFormat(''));
         MultiWordStream.styleGridlineNodes(gridlineNodes);
     }
@@ -562,16 +564,58 @@ class MultiWordStream {
         });
     }
 
+    drawVerticalAxisLabels(groupLabels, singleWordStreamHeight) {
+        const yAxisLabelGroupId = "yAxisLabelGroup";
+        d3.select("#" + yAxisLabelGroupId).remove();
+
+        let yLabelGroup = d3.select("#mainsvg")
+            .append("g")
+            .attr({
+                id: yAxisLabelGroupId,
+                transform: "translate(" + this.margins.left + ", " + this.margins.top + ")"
+            });
+        
+        let textSelection = yLabelGroup.selectAll("text")
+            .data(groupLabels);
+
+        // TODO looks good? could also do only stroke on the right side
+        textSelection.enter()
+            .append("rect")
+            .attr({
+                fill: "lavender",
+                x: 0,
+                y: (_, index) => index * (singleWordStreamHeight + this.wordStreamSpacing),
+                width: this.yAxisLabelWidth,
+                height: singleWordStreamHeight,
+            });
+
+        const fontSize = 15;
+        textSelection.enter().append("text")
+            .text(d => d)
+            .attr({
+                "text-anchor": "middle",
+                fill: "black",
+                font: "bold " + fontSize + "px",
+                transform:
+                    (_, index) => "translate(" + (this.yAxisLabelWidth / 2 + fontSize / 2) + ", "
+                        + (index * (singleWordStreamHeight + this.wordStreamSpacing) + singleWordStreamHeight / 2) + ")"
+                        + " rotate (-90)"
+            });
+
+        textSelection.exit()
+            .remove();
+    }
+
     // uses public variables:
     //  categories (for calculating legend height)
     //  globalWidth, globalHeight for calculating width/height of wordstream
     //  globalMinFont, globalMaxFont, globalFlag
     draw(dataByGroup) {
-            
+        
         let groups = Object.keys(dataByGroup);
 
-        var width = globalWidth - (this.margins.left + this.margins.right); //TODO why top?
-        var singleWordStreamHeight = (globalHeight - (+this.margins.top + this.margins.bottom + this.axisPadding + this.legendHeight)) / groups.length;
+        var width = globalWidth - (this.margins.left + this.margins.right + this.yAxisLabelWidth); //TODO why top?
+        var singleWordStreamHeight = (globalHeight - (+this.margins.top + this.margins.bottom + this.axisPadding + this.legendHeight + this.wordStreamSpacing * (groups.length - 1))) / groups.length;
 
         let wordStreamContainers = d3.select("g#main")
             .selectAll("g.word-stream-class")
@@ -581,7 +625,11 @@ class MultiWordStream {
             .append("g")
             .attr("class", "word-stream-class")
             .attr("id", (groupLabel, index) => "word-stream-" + groupLabel)
-            .attr("transform", (_, index) => "translate(" + this.margins.left + "," + (this.margins.top + index * singleWordStreamHeight) + ")");
+            .attr("transform", (_, index) => "translate("
+                + (this.margins.left + this.yAxisLabelWidth) + ","
+                + (this.margins.top + index * (singleWordStreamHeight + this.wordStreamSpacing))
+                + ")");
+
         wordStreamContainers.exit()
             .remove();
 
@@ -601,6 +649,8 @@ class MultiWordStream {
         this.drawGridAndAxis(dates, width, gridHeight);
         this.drawLegend(topics, this.margins.left, legendY);
 
+        this.drawVerticalAxisLabels(groups, singleWordStreamHeight);
+
         spinner.stop();
     }
 }
@@ -616,11 +666,10 @@ function draw(data) {
             height: globalHeight,
         });
 
-    let dataByGroup = {"A": data, "B": data, "D": data};
+    let dataByGroup = {"Atlanta": data, "Alabama": data, "Virginia": data};
 
     let multiWordStream = new MultiWordStream();
     multiWordStream.draw(dataByGroup);
-
 
     spinner.stop();
 
