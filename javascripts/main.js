@@ -135,72 +135,7 @@ class WordStream {
             .data(clonedDataObject)
             .flag(globalFlag);
 
-<<<<<<< HEAD
-
-    //set svg data.
-    svg
-        .transition()
-        .duration(300)
-        .attr({
-            width: globalWidth,
-            height: globalHeight,
-        });
-
-    var area = d3.svg.area()
-        .interpolate(interpolation)
-        .x(function (d) {
-            return (d.x);
-        })
-        .y0(function (d) {
-            return d.y0;
-        })
-        .y1(function (d) {
-            return (d.y0 + d.y);
-        });
-
-    //Display time axes
-    var dates = [];
-    boxes.data.forEach(row => {
-        dates.push(row.date);
-    });
-
-    var xAxisScale = d3.scale.ordinal().domain(dates).rangeBands([0, width]);
-    var xAxis = d3.svg.axis().orient('bottom').scale(xAxisScale);
-
-    axisGroup.attr('transform', 'translate(' + (margins.left) + ',' + (height + margins.top + axisPadding + legendHeight) + ')');
-    var axisNodes = axisGroup.call(xAxis);
-    styleAxis(axisNodes);
-
-    //Display the vertical gridline
-    var xGridlineScale = d3.scale.ordinal().domain(d3.range(0, dates.length + 1)).rangeBands([0, width + width / boxes.data.length]);
-    var xGridlinesAxis = d3.svg.axis().orient('bottom').scale(xGridlineScale);
-
-    xGridlinesGroup.attr('transform', 'translate(' + (margins.left - width / boxes.data.length / 2) + ',' + (height + margins.top + axisPadding + legendHeight + margins.bottom) + ')');
-    var gridlineNodes = xGridlinesGroup.call(xGridlinesAxis.tickSize(-height - axisPadding - legendHeight - margins.bottom, 0, 0).tickFormat(''));
-    styleGridlineNodes(gridlineNodes);
-
-    //Main group
-    mainGroup.attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
-    var wordStreamG = mainGroup.append('g').attr("id", "wordStreamG");
-
-// =============== Get BOUNDARY and LAYERPATH ===============
-    const lineCardinal = d3.svg.line()
-        .x(function (d) {
-            return d.x;
-        })
-        .y(function (d) {
-            return d.y;
-        })
-        .interpolate("cardinal");
-
-    var boundary = [];
-    for (var i = 0; i < boxes.layers[0].length; i++) {
-        var tempPoint = Object.assign({}, boxes.layers[0][i]);
-        tempPoint.y = tempPoint.y0;
-        boundary.push(tempPoint);
-=======
         this.drawSingleWordStream(this.wordStream)
->>>>>>> 2-comparison-view
     }
 
     drawSingleWordStream(ws) {
