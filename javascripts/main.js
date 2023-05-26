@@ -43,6 +43,22 @@ function addDatasetsOptions() {
 var spinner;
 
 function loadData() {
+    if (document.cookie === "") {
+        console.log("ERROR: no cookie found, should have contained country names");
+        return;
+    }
+
+    let selectedCountries;
+    try {
+        selectedCountries = JSON.parse(document.cookie);
+    } catch (exception) {
+        console.log("exception occured during json parsing");
+        console.log(exception);
+        return;
+    }
+
+    console.log("load data for ", selectedCountries);
+
     // START: loader spinner settings ****************************
     var opts = {
         lines: 25, // The number of lines to draw
@@ -664,6 +680,8 @@ class MultiWordStream {
 }
 
 function draw(data) {
+
+    console.log(data);
 
     //set svg data.
     svg
