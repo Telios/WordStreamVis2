@@ -4,6 +4,7 @@ function init_svg() {
     var svg = d3.select("body")
         .append("svg")
         .attr("width", width)
+        .attr("style", "background-color:lightgrey")
         .attr("height", height);
     var path = d3.geoPath();
 
@@ -16,7 +17,62 @@ function init_svg() {
         { label: 'miscellaneous', color: '#781c9b' }
     ];
 
+    const state_offsets = {
+        "New Jersey": {xOffset: width * 0.1, yOffset: height * 0.05},
+        "Delaware": {xOffset: width * 0.1, yOffset: height * 0.05},
+        "Maryland": {xOffset: width * 0.1, yOffset: height * 0.075},
+        "District of Columbia": {xOffset: width * 0.1, yOffset: height * 0.1},
+        "New Hampshire": {xOffset: width * 0.1, yOffset: 0 },
+        "Massachusetts": {xOffset: width * 0.1, yOffset: 0 },
+        "Connecticut": {xOffset: width * 0.1, yOffset: height * 0.05 },
+        "Rhode Island": {xOffset: width * 0.1, yOffset: height * 0.02 },
+        "Vermont": {xOffset: width * 0.1, yOffset: -height * 0.03 },
+    }
+
     var states_and_most_important_word_per_year = {
+        "New Jersey": {
+            "1980": ["person", "Reagan"],
+            "1981": ["location", "New York"],
+            "1982": ["organization", "Apple"],
+            "1983": ["person", "Reagan"],
+            "1984": ["miscellaneous", "1984"],
+            "1985": ["person", "Reagan"],
+            "1986": ["person", "Reagan"],
+            "1987": ["person", "Reagan"],
+            "1988": ["person", "Reagan"],
+            "1989": ["person", "Reagan"],
+            "1990": ["person", "Bush"],
+            "1991": ["person", "Bush"],
+            "1992": ["person", "Bush"],
+            "1993": ["person", "Clinton"],
+            "1994": ["person", "Clinton"],
+            "1995": ["person", "Clinton"],
+            "1996": ["person", "Clinton"],
+            "1997": ["person", "Clinton"],
+            "1998": ["person", "Clinton"],
+            "1999": ["person", "Clinton"],
+            "2000": ["person", "Bush"],
+            "2001": ["person", "Bush"],
+            "2002": ["person", "Bush"],
+            "2003": ["person", "Bush"],
+            "2004": ["person", "Bush"],
+            "2005": ["person", "Bush"],
+            "2006": ["person", "Bush"],
+            "2007": ["person", "Bush"],
+            "2008": ["person", "Bush"],
+            "2009": ["person", "Obama"],
+            "2010": ["person", "Obama"],
+            "2011": ["person", "Obama"],
+            "2012": ["person", "Obama"],
+            "2013": ["person", "Obama"],
+            "2014": ["person", "Obama"],
+            "2015": ["person", "Obama"],
+            "2016": ["person", "Obama"],
+            "2017": ["person", "Trump"],
+            "2018": ["person", "Trump"],
+            "2019": ["person", "Trump"],
+            "2020": ["person", "Trump"]
+        },
         "Alabama": {
             "1980": ["person", "Reagan"],
             "1981": ["location", "New York"],
@@ -857,14 +913,41 @@ function init_svg() {
 
         states.append("title").text(d => d.properties.name);
 
+        svg.append("g")
+            .selectAll("line")
+            .data(topojson.feature(us, us.objects.states).features)
+            .join("line")
+            .style("stroke", "black")
+            .style("stroke-width", 2)
+            .attrs(function(d) {
+                if (Object.keys(state_offsets).includes(d.properties.name)) {
+                return {
+                x1: path.centroid(d)[0],
+                y1: path.centroid(d)[1],
+                x2: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset - width * 0.005,
+                y2: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset};
+                }}
+            );
+
         g.append("g")
             .selectAll("text")
             .data(topojson.feature(us, us.objects.states).features)
             .join("text")
-            .attr("x", d => path.centroid(d)[0])
-            .attr("y", d => path.centroid(d)[1])
+            .attrs(function(d) {
+                if (Object.keys(state_offsets).includes(d.properties.name)) {
+                return {
+                x: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset,
+                y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset,
+                } } else {
+                return {
+                x: path.centroid(d)[0],
+                y: path.centroid(d)[1],
+                }}
+            })
             .attr("dy", ".2em")
-            .attr("text-anchor", "middle")
+            .attr("text-anchor", function(d) {
+                return Object.keys(state_offsets).includes(d.properties.name) ? "left": "middle";
+            })
             .attr("fill", "#ffffff")
             .attr("pointer-events", "none")
             .text(d => d.properties.name);
@@ -998,7 +1081,7 @@ function init_svg() {
 
 
     d3.select("svg").append("g")
-        .attr("width", 1400)
+        .attr("width", width)
         .attr("height", 100)
         .attr("transform", "translate(50,700)")
         .call(slider);
