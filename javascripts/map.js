@@ -1,7 +1,7 @@
 function init_svg() {
-    var width = 1400;
+    var width = 1200;
     var height = 800;
-    var svg = d3.select("body")
+    var svg = d3.select("body").append("div").attr("class", "map").attr("style", "text-align:center")
         .append("svg")
         .attr("width", width)
         .attr("style", "background-color:lightgrey")
@@ -966,7 +966,7 @@ function init_svg() {
     const legend = d3.select("svg")
         .append("g")
         .attr("class", "legend")
-        .attr("transform", "translate(" + width * 0.7 + "," + height * 0.7 + ")");
+        .attr("transform", "translate(" + width * 0.8 + "," + height * 0.7 + ")");
 
 // Add rectangles for each category
     legend.selectAll('rect')
@@ -1057,14 +1057,16 @@ function init_svg() {
         .min(1980)
         .max(2020)
         .step(1)
-        .width(1000)
+        .width(width * 0.8)
         .displayValue(true)
         .on('onchange', val => {
             updateMap(val);
         });
 
-    /**
+
     function startAnimation() {
+        if (d3.select("rect[title='start_animation_button']").attr("played_button") === "true") return;
+        d3.select("rect[title='start_animation_button']").attr("played_button", "true");
         var i = 1980;
         var interval = setInterval(function() {
             updateMap(i);
@@ -1072,18 +1074,40 @@ function init_svg() {
             i++;
             if (i > 2020) {
                 clearInterval(interval);
+                d3.select("rect[title='start_animation_button']").attr("played_button", "false");
             }
         }, 100);
     }
-     startAnimation();
-     **/
+
+    d3.select("svg").append("g").attr("type", "button")
+        .append("rect")
+        .attrs({
+            rx: 6,
+            ry: 6,
+            x: width * 0.9,
+            y: height * 0.87,
+            width: width * 0.057,
+            height: height * 0.05,
+            fill: "#fff",
+            title: "start_animation_button",
+            played_button: "false",
+            })
+        .on("click", startAnimation);
+
+    svg.select("g[type='button']")
+        .append("text")
+        .attrs({
+            x: width * 0.9 + width * 0.0045,
+            y: height * 0.87 + height * 0.03,
+            font: `${height * 0.03}px sans-serif`,
+            "pointer-events": "none"})
+        .text("Animate");
 
 
 
     d3.select("svg").append("g")
         .attr("width", width)
-        .attr("height", 100)
-        .attr("transform", "translate(50,700)")
+        .attr("height", height * 0.1)
+        .attr("transform", _ => `translate(${width * 0.05},${height * 0.9})`)
         .call(slider);
-
 }
