@@ -3,6 +3,7 @@ import numpy as np
 import sqlite3
 import time
 import os
+import json
 
 
 # Takes unique_player_ids as numpy array.
@@ -257,12 +258,15 @@ def main():
     print(f"grouping and file output ... ", end="")
     os.makedirs("../output/basketball", exist_ok=True)
 
+    output_dict = {}
+
     # get overall counts per season
     overall_counts = play_by_play.groupby(["season_id", "player_id"], as_index=False, sort=False)\
         .agg({"player_id": "count", "full_name": "first", "position": "first"})\
         .rename(columns={"player_id": "count"})\
         .sort_values(["season_id"])
-    overall_counts.to_json("../output/basketball/overall.json", orient="records")
+
+    output_dict["overall_counts"] = overall_counts.to_dict(orient="records")
 
     # get counts within each state per season
     state_counts = play_by_play\
@@ -270,10 +274,17 @@ def main():
         .agg({"player_id": "count", "full_name": "first", "position": "first"})\
         .rename(columns={"player_id": "count"})\
         .sort_values(["state", "season_id"])
-    state_counts.to_json("../output/basketball/per_state.json", orient="records")
+
+    output_dict["per_state_counts"] = state_counts.to_dict(orient="records")
+
+    with open("../output/basketball/basketball.json", "w") as file:
+        json.dump(output_dict, file)
+
     print(f"took {time.perf_counter() - start_time}s")
 
-    print(f"rFINISHED, took {time.perf_counter() - start_time_all}s")
+
+
+    print(f"FINISHED, took {time.perf_counter() - start_time_all}s")
 
 
 if __name__ == '__main__':
