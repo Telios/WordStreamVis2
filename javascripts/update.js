@@ -32,7 +32,19 @@ function submitInput(draw) {
     }
 
     // top rank
-    var data = JSON.parse(JSON.stringify(totalData));
-    globalData = getTop(data, categories, globalTop);
-    draw(globalData);
+    if (datasetsWithStates.includes(fileName)) {
+        //totalData contains multiple streams (object with group names as keys, data as values)
+        let totalDataEntries = Object.entries(totalData)
+            .map(entry => [entry[0], getTop(entry[1], categories, globalTop)]);
+        globalData = Object.fromEntries(totalDataEntries);
+        draw(globalData, true);
+
+    } else {
+        //totalData contains data for (single) word stream as list
+        var data = JSON.parse(JSON.stringify(totalData));
+        globalData = getTop(data, categories, globalTop);
+        draw(globalData);
+    }
+
+    
 }

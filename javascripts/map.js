@@ -1048,10 +1048,11 @@ function init_svg() {
             .text(d => d)
             .style("color", "#fff")
             .style("background-color", "rgb(68, 68, 68)")
-            .style("spacing", "15px 5px 15px 5px")
+            .style("padding", "10px 5px 10px 5px")
             .style("margin", "2px")
-            .style("border-radius", "2px")
-            .style("opacity", 0.85);
+            .style("border-radius", "5px")
+            .style("opacity", 0.85)
+
         d3.select(".selected-states-panel")
             .style("visibility", selectedStates.length === 0 ? "hidden" : "visible");
     }
@@ -1161,6 +1162,7 @@ function init_svg() {
         .append("a")
         .text("Compare")
         .attr("href", "index.html")
-        .attr("class", "button still");
+        .attr("class", "button still")
+        .style("float", "unset");
 
 }

@@ -7,8 +7,8 @@ var svg = d3.select("body").append('svg')
 
 var selectedDatasets = ["Esquire", "EmptyWheel"];
 
-var fileList = ["WikiNews", "Huffington", "CrooksAndLiars", "EmptyWheel", "Esquire", "FactCheck", "VIS_papers", "IMDB", "PopCha", "Cards_PC", "Cards_Fries", "QuantumComputing", "Basketball"]
-var datasetsWithStates = ["Basketball"];
+var fileList = ["WikiNews", "Huffington", "CrooksAndLiars", "EmptyWheel", "Esquire", "FactCheck", "VIS_papers", "IMDB", "PopCha", "Cards_PC", "Cards_Fries", "QuantumComputing", "Basketball", "UCD"]
+var datasetsWithStates = ["Basketball", "UCD"];
 
 var initialDataset = getInitialDataset();
 var categories = ["person", "location", "organization", "miscellaneous"];
@@ -80,6 +80,10 @@ function loadData() {
             console.log("selected basketball dataset, brace yourselves");
             categories = ["Guard", "Forward", "Center"];
             loadBasketballDataset(draw, initTop, selectedCountries);
+        }
+        if (fileName === "UCD") {
+            console.log("selected UCD dataset, brace yourselves");
+            loadUnderlyingCausesOfDeathDataset(draw, initTop, selectedCountries);
         }
         return;
     }
@@ -650,7 +654,7 @@ class MultiWordStream {
         let wordStreamContainers = d3.select("g#main")
             .selectAll("g.word-stream-class")
             .data(groups)
-            .attr("id", (groupLabel, index) => "word-stream-" + groupLabel)
+            .attr("id", (groupLabel, index) => "word-stream-" + groupLabel.replace(" ", ""))
             .attr("transform", (_, index) => "translate("
                 + (this.margins.left + this.yAxisLabelWidth) + ","
                 + (this.margins.top + index * (singleWordStreamHeight + this.wordStreamSpacing))
@@ -662,14 +666,14 @@ class MultiWordStream {
         wordStreamContainers.enter()
             .append("g")
             .attr("class", "word-stream-class")
-            .attr("id", (groupLabel, index) => "word-stream-" + groupLabel)
+            .attr("id", (groupLabel, index) => "word-stream-" + groupLabel.replace(" ", ""))
             .attr("transform", (_, index) => "translate("
                 + (this.margins.left + this.yAxisLabelWidth) + ","
                 + (this.margins.top + index * (singleWordStreamHeight + this.wordStreamSpacing))
                 + ")");
 
         this.wordStreams = groups.map((groupLabel) => {
-            let wordStreamContainer = d3.select("#word-stream-" + groupLabel);
+            let wordStreamContainer = d3.select("#word-stream-" + groupLabel.replace(" ", ""));
             let wordStream = new WordStream(wordStreamContainer, this.font);
             wordStream.draw(dataByGroup[groupLabel], width, singleWordStreamHeight);
             return wordStream;
