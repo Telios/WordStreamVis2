@@ -35,7 +35,71 @@ function init_svg() {
         "Vermont": {xOffset: width * 0.1, yOffset: -height * 0.03 },
     }
 
-    var states_and_most_important_word_per_year = {
+    var states_and_most_important_word_per_year = {};
+
+    function getTopWordsPerState() {
+        let dataset = readSelectedDatasetCookie();
+        if (!dataset) {
+            // TODO cookie missing, cannot show any words - what to do?
+        }
+    
+        if (dataset === "Basketball") {
+            
+        } else if (dataset === "UCD") {
+            d3.tsv("data/UCD_1999_2020.txt")
+                .then((rawData) => {
+                    const remappedRawData = rawData.map(entry => {
+                        const code = entry["ICD-10 113 Cause List Code"];
+                        return {
+                            state: entry.State,
+                            year: entry.Year,
+                            deaths: entry.Deaths,
+                            text: REMAPPING_UCD[code].name,
+                            category: REMAPPING_UCD[code].category,
+                        };
+                    });
+    
+                    const states = getUniqueValues(rawData.map(row => row.State));
+                    const categories = getUniqueValues(Object.values(REMAPPING_UCD).map(entry => entry.category));
+    
+                    //const years = getUniqueValues(data.map(row => row.Year));
+    
+                    const stateProcessedData = states.map(state => {
+                        const stateRawData = remappedRawData.filter(row => row.state === state);
+                        return processRawFrequencyItems(stateRawData, "year", "category", "deaths", "text");
+                    });
+    
+                    stateProcessedData.forEach(data => processSudden(data));
+                    let topWords = Object.fromEntries(
+                        stateProcessedData.map((dataPerState, stateIndex) => [
+                            states[stateIndex],
+                            Object.fromEntries(dataPerState.map((dataPerStateAndYear, yearIndex) => {
+                                const sortedWordsInYear = []
+                                    .concat(...Object.values(dataPerStateAndYear.words))
+                                    .sort((word1, word2) => word2.sudden - word1.sudden);
+                                const topWord = sortedWordsInYear[0];
+                                return [dataPerStateAndYear.date, [topWord.topic, topWord.text]];
+                            }))
+                        ]
+                    ));
+
+                    let years = Object.keys(Object.values(states_and_most_important_word_per_year));
+            
+                    // TODO whyyy
+                    //slider.min(Math.min(...Object.keys(Object.values(states_and_most_important_word_per_year))));
+
+                    states_and_most_important_word_per_year = topWords;
+                    
+                    //updateMap();
+                    console.log(topWords);
+                });
+                
+        } else if (dataset === "NNDSS") {
+    
+        }
+    }
+
+    var states_and_most_important_word_per_yearTODO = {
         "New Jersey": {
             "1980": ["person", "Reagan"],
             "1981": ["location", "New York"],
@@ -896,7 +960,7 @@ function init_svg() {
             "2019": ["person", "Clinton"],
             "2020": ["person", "Clinton"]
         },
-
+        
     }
 
     var selectedStates = [];
@@ -972,7 +1036,9 @@ function init_svg() {
             .attr("stroke", "#fff")
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
+        
         loadSelectedStatesFromCookie();
+        getTopWordsPerState();
     });
 
 
@@ -1165,4 +1231,6 @@ function init_svg() {
         .attr("class", "button still")
         .style("float", "unset");
 
+
+        
 }
