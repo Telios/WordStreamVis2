@@ -29,13 +29,8 @@ var legendGroup = svg.append('g').attr("id", "legend");
 addDatasetsOptions();
 
 function getInitialDataset() {
-    let datasetCookie = document.cookie
-            .split("; ")
-            .find(singleCookie => singleCookie.startsWith("selected_dataset="));
-    if (datasetCookie) {
-        return datasetCookie.split("=")[1];
-    }
-    return "EmptyWheel";
+    let datasetCookie = readSelectedDatasetCookie();
+    return datasetCookie ? datasetCookie : "EmptyWheel";
 }
 
 function addDatasetsOptions() {
@@ -75,20 +70,7 @@ function loadData() {
 
     document.cookie = "selected_dataset=" + fileName;
     if (datasetsWithStates.includes(fileName)) {
-        let selectedCountries = [];
-
-        let selectedStatesCookie = document.cookie
-            .split("; ")
-            .find(singleCookie => singleCookie.startsWith("selected_states="));
-
-        if (selectedStatesCookie) {
-            try {
-                selectedCountries = JSON.parse(selectedStatesCookie.split("=")[1]);
-            } catch (exception) {
-                console.log("exception occured during JSON parsing of cookie", exception);
-            }
-            console.log("selected countries", selectedCountries);
-        }
+        let selectedCountries = readSelectedStateCookie();
 
         if (selectedCountries.length === 0) {
             selectedCountries.push("_overall");

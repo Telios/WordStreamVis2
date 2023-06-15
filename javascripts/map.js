@@ -895,6 +895,15 @@ function init_svg() {
 
     var selectedStates = [];
 
+    function loadSelectedStatesFromCookie() {
+        let selectedStatesFromCookie = readSelectedStateCookie();
+        
+        selectedStatesFromCookie.forEach(selectedState => {
+            let selection = d3.selectAll("#" + selectedState.replace(" ", ""));
+            click.call(selection.node(), undefined, selection.data()[0]);
+        });
+    }
+
     geoJsonUrl = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-albers-10m.json";
 
     d3.json(geoJsonUrl).then(us => {
@@ -905,7 +914,7 @@ function init_svg() {
             .data(topojson.feature(us, us.objects.states).features)
             .join("path")
             .attr("d", path)
-            .attr("id", d => d.properties.name)
+            .attr("id", d => d.properties.name.replace(" ", ""))
             .attr("class", "state")
             .on("mouseover", mouseover)
             .on("click", click)
@@ -957,7 +966,7 @@ function init_svg() {
             .attr("stroke", "#fff")
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
-
+        loadSelectedStatesFromCookie();
     });
 
 
