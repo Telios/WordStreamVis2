@@ -1,12 +1,18 @@
 function init_svg() {
     var width = 1200;
     var height = 800;
-    var svg = d3.select("body").append("div").attr("class", "map").attr("style", "text-align:center")
+    var svg = d3.select("body")
+        .append("div")
+        .attr("class", "map")
+        .style("text-align", "center")
+        .style("display", "flex")
+        .style("justify-content", "center")
         .append("svg")
         .attr("width", width)
         .attr("style", "background-color:lightgrey")
-        .attr("height", height);
-    var path = d3.geoPath();
+        .attr("height", height)
+        .style("flex-shrink", 0);
+        var path = d3.geoPath();
 
     var g = svg.append("g");
 
@@ -1034,6 +1040,20 @@ function init_svg() {
         }
         console.log(selectedStates);
         document.cookie = "selected_states=" + JSON.stringify(selectedStates);
+
+
+        d3.selectAll(".selected-states-list").selectAll("div")
+            .data(selectedStates)
+            .join("div")
+            .text(d => d)
+            .style("color", "#fff")
+            .style("background-color", "rgb(68, 68, 68)")
+            .style("spacing", "15px 5px 15px 5px")
+            .style("margin", "2px")
+            .style("border-radius", "2px")
+            .style("opacity", 0.85);
+        d3.select(".selected-states-panel")
+            .style("visibility", selectedStates.length === 0 ? "hidden" : "visible");
     }
 
     function updateMap(year) {
@@ -1120,4 +1140,27 @@ function init_svg() {
         .attr("height", height * 0.1)
         .attr("transform", _ => `translate(${width * 0.05},${height * 0.9})`)
         .call(slider);
+
+    let selectedStatesPanel = d3.select(".map")
+        .append("div")
+        .attr("class", "selected-states-panel")
+        .style("text-align", "center")
+        .style("margin", "5px")
+        .style("width", "200px")
+        .style("visibility", readSelectedStateCookie().length === 0 ? "hidden" : "visible");
+    selectedStatesPanel
+        .append("div")
+        .text("Selected states")
+    selectedStatesPanel
+        .append("div")
+        .attr("class", "selected-states-list")
+        .append("div")
+        .style("opacity", 0.85)
+        .text("None")
+    selectedStatesPanel
+        .append("a")
+        .text("Compare")
+        .attr("href", "index.html")
+        .attr("class", "button still");
+
 }
