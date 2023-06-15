@@ -7,9 +7,10 @@ var svg = d3.select("body").append('svg')
 
 var selectedDatasets = ["Esquire", "EmptyWheel"];
 
-var fileList = ["WikiNews", "Huffington", "CrooksAndLiars", "EmptyWheel", "Esquire", "FactCheck", "VIS_papers", "IMDB", "PopCha", "Cards_PC", "Cards_Fries", "QuantumComputing"]
+var fileList = ["WikiNews", "Huffington", "CrooksAndLiars", "EmptyWheel", "Esquire", "FactCheck", "VIS_papers", "IMDB", "PopCha", "Cards_PC", "Cards_Fries", "QuantumComputing", "Basketball"]
+var datasetsWithStates = ["Basketball"];
 
-var initialDataset = "EmptyWheel";
+var initialDataset = getInitialDataset();
 var categories = ["person", "location", "organization", "miscellaneous"];
 
 var fileName;
@@ -23,7 +24,19 @@ var xGridlinesGroup = svg.append('g').attr("id", "xGridlinesGroup");
 var mainGroup = svg.append('g').attr("id", "main");
 var legendGroup = svg.append('g').attr("id", "legend");
 
+
+
 addDatasetsOptions();
+
+function getInitialDataset() {
+    let datasetCookie = document.cookie
+            .split("; ")
+            .find(singleCookie => singleCookie.startsWith("selected_dataset="));
+    if (datasetCookie) {
+        return datasetCookie.split("=")[1];
+    }
+    return "EmptyWheel";
+}
 
 function addDatasetsOptions() {
     var select = document.getElementById("datasetsSelect");
@@ -37,27 +50,13 @@ function addDatasetsOptions() {
     }
     document.getElementById('datasetsSelect').value = initialDataset;  //************************************************
     fileName = document.getElementById("datasetsSelect").value;
+    
     loadData();
 }
 
 var spinner;
 
 function loadData() {
-    if (document.cookie === "") {
-        console.log("ERROR: no cookie found, should have contained country names");
-        return;
-    }
-
-    let selectedCountries;
-    try {
-        selectedCountries = JSON.parse(document.cookie);
-    } catch (exception) {
-        console.log("exception occured during json parsing");
-        console.log(exception);
-        return;
-    }
-
-    console.log("load data for ", selectedCountries);
 
     // START: loader spinner settings ****************************
     var opts = {
@@ -73,6 +72,36 @@ function loadData() {
     var target = document.getElementById('loadingSpinner');
     spinner = new Spinner(opts).spin(target);
     // END: loader spinner settings ****************************
+
+    document.cookie = "selected_dataset=" + fileName;
+    if (datasetsWithStates.includes(fileName)) {
+        let selectedCountries = [];
+
+        let selectedStatesCookie = document.cookie
+            .split("; ")
+            .find(singleCookie => singleCookie.startsWith("selected_states="));
+
+        if (selectedStatesCookie) {
+            try {
+                selectedCountries = JSON.parse(selectedStatesCookie.split("=")[1]);
+            } catch (exception) {
+                console.log("exception occured during JSON parsing of cookie", exception);
+            }
+            console.log("selected countries", selectedCountries);
+        }
+
+        if (selectedCountries.length === 0) {
+            selectedCountries.push("_overall");
+        }
+
+        if (fileName === "Basketball") {
+            console.log("selected basketball dataset, brace yourselves");
+            categories = ["Guard", "Forward", "Center"];
+            loadBasketballDataset(draw, initTop, selectedCountries);
+        }
+        return;
+    }
+
     fileName = "data/" + fileName + ".tsv"; // Add data folder path
     if (fileName.indexOf("Cards_Fries") >= 0) {
         categories = ["increases_activity", "decreases_activity"];
@@ -679,9 +708,20 @@ class MultiWordStream {
     }
 }
 
-function draw(data) {
+function draw(data, multiple = false) {
 
-    console.log(data);
+    let dataByGroup = {};
+
+    if (multiple) {
+        console.log("drawing multiple WordStreams");
+        // data is an object with labels as keys, values are lists of word-lists
+        // e.g. {"Georgia": data1, "Alabama": data2, "Virginia": data2};
+        dataByGroup = data;
+    } else {
+        console.log("drawing single WordStream");
+        // data is list of word-lists
+        dataByGroup["_overall"] = data;
+    }
 
     //set svg data.
     svg
@@ -691,8 +731,6 @@ function draw(data) {
             width: globalWidth,
             height: globalHeight,
         });
-
-    let dataByGroup = {"Atlanta": data, "Alabama": data, "Virginia": data};
 
     let multiWordStream = new MultiWordStream();
     multiWordStream.draw(dataByGroup);

@@ -1024,7 +1024,7 @@ function init_svg() {
             selectedStates.push(i.properties.name);
         }
         console.log(selectedStates);
-        document.cookie = JSON.stringify(selectedStates);
+        document.cookie = "selected_states=" + JSON.stringify(selectedStates);
     }
 
     function updateMap(year) {
