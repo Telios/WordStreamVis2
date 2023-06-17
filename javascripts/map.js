@@ -250,7 +250,7 @@ function init_svg() {
 
     function click(d, i) {
         if (d3.select(this).attr("stroke") === "#10efd5") {
-            d3.select(this).attr("stroke", "#fff")
+            d3.select(this).attr("stroke", "rgba(255,255,255,0)")
                 .attr("stroke-width", "1px");
             selectedStates = selectedStates.filter(state => state !== i.properties.name);
         } else {

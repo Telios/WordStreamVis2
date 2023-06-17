@@ -2,6 +2,15 @@ body {
     background-color: #eeeeee;
     font-family:  Arial, sans-serif;
 }
+
+.slider text {
+    fill: #ffffff;
+}
+
+.axis text {
+    fill: #eaeaea;
+}
+
 .video {
     top: 200px;
     text-align: center;
