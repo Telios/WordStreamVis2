@@ -166,11 +166,11 @@ function init_svg() {
                 if (Object.keys(state_offsets).includes(d.properties.name)) {
                 return {
                 x: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset,
-                y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset - height * 0.05
+                y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
                 } } else {
                 return {
                 x: path.centroid(d)[0],
-                y: path.centroid(d)[1] - height * 0.05
+                y: path.centroid(d)[1]
                 }}
             })
             .attr("dy", ".2em")
@@ -179,7 +179,16 @@ function init_svg() {
             })
             .attr("fill", "#ffffff")
             .attr("pointer-events", "none")
-            .text(d => d.properties.name);
+            .text(d => d.properties.name)
+            .style("font-size", function(d) {
+                let scale = Math.sqrt(path.area(d)) / 5;
+                let width = path.bounds(d)[1][0] - path.bounds(d)[0][0];
+                if (Object.keys(state_offsets).includes(d.properties.name)) {
+                    return 15 + "px";
+                }
+                return scale + "px";
+            })
+
 
         g.append("path")
             .attr("fill", "none")
@@ -206,7 +215,7 @@ function init_svg() {
             .attr("opacity", "1");
     }
 
-    // source: https://stackoverflow.com/a/24785497
+    // source: https://stackoverflow.com/a/24785497 with minor modifications
     function wrap(text, width) {
         text.each(function () {
             var text = d3.select(this),
@@ -217,7 +226,8 @@ function init_svg() {
                 lineHeight = 1.3, // ems
                 x = text.attr("x"),
                 y = text.attr("y"),
-                dy = 0, //parseFloat(text.attr("dy")),
+                font_size = text.style("font-size").substring(0, text.style("font-size").length - 2);
+                dy = 0; //parseFloat(text.attr("dy")),
                 tspan = text.text(null)
                     .append("tspan")
                     .attr("x", x)
@@ -237,6 +247,7 @@ function init_svg() {
                         .text(word);
                 }
             }
+
         });
     }
 
@@ -292,7 +303,9 @@ function init_svg() {
                 } else {
                     return state.properties.name;
                 }
-            }).call(wrap, 20);
+            }).call(function(d) {
+            return wrap(d, 100);
+        });
         g.selectAll(".state")
             .attr("fill", state => {
                 if (Object.keys(data_of_year_per_state).includes(state.properties.name)) {
