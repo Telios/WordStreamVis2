@@ -7,8 +7,10 @@ var svg = d3.select("body").append('svg')
 
 var selectedDatasets = ["Esquire", "EmptyWheel"];
 
-var fileList = ["WikiNews", "Huffington", "CrooksAndLiars", "EmptyWheel", "Esquire", "FactCheck", "VIS_papers", "IMDB", "PopCha", "Cards_PC", "Cards_Fries", "QuantumComputing", "Basketball", "UCD"]
-var datasetsWithStates = ["Basketball", "UCD"];
+var fileList = ["WikiNews", "Huffington", "CrooksAndLiars", "EmptyWheel", "Esquire", "FactCheck",
+    "VIS_papers", "IMDB", "PopCha", "Cards_PC", "Cards_Fries", "QuantumComputing",
+    "Basketball", "UCD", "NNDSS"]
+var datasetsWithStates = ["Basketball", "UCD", "NNDSS"];
 
 var initialDataset = getInitialDataset();
 var categories = ["person", "location", "organization", "miscellaneous"];
@@ -77,13 +79,15 @@ function loadData() {
         }
 
         if (fileName === "Basketball") {
-            console.log("selected basketball dataset, brace yourselves");
+            //console.log("selected basketball dataset, brace yourselves");
             categories = ["Guard", "Forward", "Center"];
             loadBasketballDataset(draw, initTop, selectedCountries);
-        }
-        if (fileName === "UCD") {
-            console.log("selected UCD dataset, brace yourselves");
+        } else if (fileName === "UCD") {
+            //console.log("selected UCD dataset, brace yourselves");
             loadUnderlyingCausesOfDeathDataset(draw, initTop, selectedCountries);
+        } else if (fileName === "NNDSS") {
+            //console.log("selected NNDSS dataset, brace yourselves");
+            loadDiseasesDataset(draw, initTop, selectedCountries);
         }
         return;
     }
