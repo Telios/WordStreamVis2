@@ -51,69 +51,55 @@ function init_svg() {
     var states_and_most_important_word_per_year = {};
 
     function getTopWordsPerState() {
-        let dataset = readSelectedDatasetCookie();
-        if (!dataset) {
-            // TODO cookie missing, cannot show any words - what to do?
+        let datasetName = readSelectedDatasetCookie();
+        if (!datasetName) {
+            // TODO dataset cookie missing, cannot show any words - what to do?
+            throw new Error("dataset cookie missing - no dataset selected, cannot show words");
         }
-    
-        if (dataset === "Basketball") {
-            
-        } else if (dataset === "UCD") {
-            d3.tsv("data/UCD_1999_2020.txt")
-                .then((rawData) => {
-                    const remappedRawData = rawData.map(entry => {
-                        const code = entry["ICD-10 113 Cause List Code"];
-                        return {
-                            state: entry.State,
-                            year: entry['Year Code'],
-                            deaths: entry.Deaths,
-                            text: REMAPPING_UCD[code].name,
-                            category: REMAPPING_UCD[code].category,
-                        };
-                    });
-    
-                    const states = getUniqueValues(rawData.map(row => row.State));
-                    const categories = getUniqueValues(Object.values(REMAPPING_UCD).map(entry => entry.category));
-
-                    colorscheme = categories.map((entry, i) => {return {label: entry, color: d3_colors[i]}});
-                    drawLegend();
-
-                    const stateProcessedData = states.map(state => {
-                        const stateRawData = remappedRawData.filter(row => row.state === state);
-                        return processRawFrequencyItems(stateRawData, "year", "category", "deaths", "text");
-                    });
-    
-                    stateProcessedData.forEach(data => processSudden(data));
-                    let topWords = Object.fromEntries(
-                        stateProcessedData.map((dataPerState, stateIndex) => [
-                            states[stateIndex],
-                            Object.fromEntries(dataPerState.map((dataPerStateAndYear, yearIndex) => {
-                                const sortedWordsInYear = []
-                                    .concat(...Object.values(dataPerStateAndYear.words))
-                                    .sort((word1, word2) => word2.sudden - word1.sudden);
-                                const topWord = sortedWordsInYear[0];
-
-                                return [dataPerStateAndYear.date, [topWord.topic, topWord.text]];
-                            }))
-                        ]
-                    ));
-                    states_and_most_important_word_per_year = topWords;
-                    min_year = Math.min(...Object.keys(...Object.values(states_and_most_important_word_per_year)));
-                    max_year = Math.max(...Object.keys(...Object.values(states_and_most_important_word_per_year)));
-                    // TODO whyyy
-                    slider.min(min_year);
-                    slider.max(max_year);
-                    slider.value(min_year);
-                    d3.select("#slider").call(slider);
-
-                    //updateMap();
-
-                });
-                
-        } else if (dataset === "NNDSS") {
-    
+        
+        function getTopWordsObject(rawData, datasetGen, stateAccessor) {
+            const states = getUniqueValues(rawData.map(stateAccessor));
+            const datasetsPerState = loadDatasetsForStates(rawData, states, datasetGen, stateAccessor);
+            return Object.fromEntries(Object.entries(datasetsPerState)
+                .map(stateEntry => [
+                    stateEntry[0],
+                    Object.fromEntries(
+                        Object.entries(stateEntry[1].getTopWordPerTimestep(compareSuddenAttentionMeasure))
+                            .map(timestepEntry => [timestepEntry[0],
+                                [timestepEntry[1].topic, timestepEntry[1].text]])
+                    )
+                ]));
         }
 
+        function handleDataArrived(rawData) {
+            const datasetGen = getDatasetGenerator(datasetName);
+            let stateAccessor = getStateAccessor(datasetName);
+            const topWords = getTopWordsObject(rawData, datasetGen, stateAccessor);
+
+            const categories = getUniqueValues(rawData.map(datasetGen.categoryAccessor));
+
+            colorscheme = categories.map((entry, i) => {return {label: entry, color: d3_colors[i]}});
+            drawLegend();
+
+            states_and_most_important_word_per_year = topWords;
+            min_year = Math.min(...Object.keys(...Object.values(states_and_most_important_word_per_year)));
+            max_year = Math.max(...Object.keys(...Object.values(states_and_most_important_word_per_year)));
+            // TODO whyyy
+            slider.min(min_year);
+            slider.max(max_year);
+            slider.value(min_year);
+            d3.select("#slider").call(slider);
+
+            //updateMap();
+        }
+
+        if (datasetName === "Basketball") {
+            d3.json("data/basketball.json").then(data => handleDataArrived(data["per_state_counts"]));
+        } else if (datasetName === "UCD") {
+            d3.tsv("data/UCD_1999_2020.txt").then(data => handleDataArrived(data));
+        } else if (datasetName === "NNDSS") {
+            d3.tsv("data/nndss_2016_2020_clean.txt").then(data => handleDataArrived(data));
+        }
     }
 
     var selectedStates = [];
@@ -425,5 +411,4 @@ function init_svg() {
         .style("float", "unset");
 
 
-        
 }
