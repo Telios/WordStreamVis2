@@ -1,5 +1,6 @@
 function init_svg() {
     var width = 1200;
+    var svg_width = width;
     var height = 800;
     var svg = d3.select("body")
         .append("div")
@@ -9,14 +10,14 @@ function init_svg() {
         .style("justify-content", "center")
         .append("svg")
         .attr("width", width)
-        .attr("style", "background-color:lightgrey")
+        .attr("style", "background-color:#a8a8a8")
         .attr("height", height)
         .style("flex-shrink", 0);
     var path = d3.geoPath();
 
 
     var g = svg.append("g");
-    var d3_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'];
+    var d3_colors = ['#3968b6', '#af8537', '#1c7e1c', '#c44041', '#9467bd'];
     var colorscheme = [
         //{ label: 'miscellaneous', color: '#781c9b' }
     ];
@@ -34,16 +35,18 @@ function init_svg() {
         });
 
     const state_offsets = {
-        "New Jersey": {xOffset: width * 0.1, yOffset: height * 0.05},
-        "Delaware": {xOffset: width * 0.1, yOffset: height * 0.05},
-        "Maryland": {xOffset: width * 0.1, yOffset: height * 0.075},
-        "District of Columbia": {xOffset: width * 0.1, yOffset: height * 0.1},
-        "New Hampshire": {xOffset: width * 0.1, yOffset: 0 },
-        "Massachusetts": {xOffset: width * 0.1, yOffset: 0 },
-        "Connecticut": {xOffset: width * 0.1, yOffset: height * 0.05 },
-        "Rhode Island": {xOffset: width * 0.1, yOffset: height * 0.02 },
-        "Vermont": {xOffset: width * 0.1, yOffset: -height * 0.03 },
+        "Vermont": {xOffset: -width * 0.0, yOffset: -height * 0.14},
+        "New Hampshire": {xOffset: width * 0.09, yOffset: -height * 0.05},
+        "Massachusetts": {xOffset: width * 0.08, yOffset: -height * 0.03},
+        "Rhode Island": {xOffset: width * 0.07, yOffset: height * 0.02},
+        "Connecticut": {xOffset: width * 0.085, yOffset: height * 0.07},
+        "New Jersey": {xOffset: width * 0.1, yOffset: height * 0.07},
+        "Delaware": {xOffset: width * 0.1, yOffset: height * 0.09},
+        "Maryland": {xOffset: width * 0.115, yOffset: height * 0.14},
+        "District of Columbia": {xOffset: width * 0.12, yOffset: height * 0.2},
+        "Hawaii": {xOffset: width * 0.01, yOffset: height * 0.08},
     }
+
 
     var states_and_most_important_word_per_year = {};
 
@@ -146,16 +149,16 @@ function init_svg() {
             .selectAll("line")
             .data(topojson.feature(us, us.objects.states).features)
             .join("line")
+            .filter(function(d) { return Object.keys(state_offsets).includes(d.properties.name);})
             .style("stroke", "black")
             .style("stroke-width", 2)
             .attrs(function(d) {
-                if (Object.keys(state_offsets).includes(d.properties.name)) {
                 return {
                 x1: path.centroid(d)[0],
                 y1: path.centroid(d)[1],
                 x2: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset - width * 0.005,
-                y2: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset - height * 0.05}
-                }}
+                y2: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset}
+                }
             );
 
         g.append("g")
@@ -216,10 +219,14 @@ function init_svg() {
     }
 
     // source: https://stackoverflow.com/a/24785497 with minor modifications
-    function wrap(text, width) {
+    function wrap(text) {
         text.each(function () {
+            var state = d3.select(this).data()[0];
+            var width = (path.bounds(state)[1][0] - path.bounds(state)[0][0]) * 0.9;
+
             var text = d3.select(this),
                 words = text.text().split(/\s+/).reverse(),
+                first_word = true,
                 word,
                 line = [],
                 lineNumber = 0,
@@ -233,10 +240,13 @@ function init_svg() {
                     .attr("x", x)
                     .attr("y", y)
                     .attr("dy", dy + "em");
+            if (Object.keys(state_offsets).includes(state.properties.name)) {
+                width = svg_width - text.attr("x");
+            }
             while (word = words.pop()) {
                 line.push(word);
                 tspan.text(line.join(" "));
-                if (tspan.node().getComputedTextLength() > width) {
+                if (tspan.node().getComputedTextLength() > width && !first_word) {
                     line.pop();
                     tspan.text(line.join(" "));
                     line = [word];
@@ -246,6 +256,7 @@ function init_svg() {
                         .attr("dy", ++lineNumber * lineHeight + dy + "em")
                         .text(word);
                 }
+                first_word = false;
             }
 
         });
@@ -303,9 +314,7 @@ function init_svg() {
                 } else {
                     return state.properties.name;
                 }
-            }).call(function(d) {
-            return wrap(d, 100);
-        });
+            }).call(wrap);
         g.selectAll(".state")
             .attr("fill", state => {
                 if (Object.keys(data_of_year_per_state).includes(state.properties.name)) {
@@ -342,7 +351,7 @@ function init_svg() {
 
         legend.style('font-size', '15px')
             .style('font-family', 'Arial')
-            .style('fill', '#000000');
+            .style('fill', '#ffffff');
     }
 
     function startAnimation() {
