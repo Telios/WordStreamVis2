@@ -7,6 +7,27 @@ function showRelationship() {
     else d3.selectAll(".connection").transition().duration(200).attr("opacity", 0);
 }
 
+function updateFillAndStrokeVars() {
+    globalFill = document.getElementById("fillCheckbox").checked;
+    globalStroke = document.getElementById("strokeCheckbox").checked;
+}
+
+function getCurrentFillAndStrokeStyle() {
+    return {
+        'fill-opacity': globalFill ? 0.1 : 0,
+        'stroke-width': globalStroke ? 0.1 : 0,
+    };
+}
+
+function updateFillAndStrokeDom() {
+    d3.selectAll('.curve').attr(getCurrentFillAndStrokeStyle());
+}
+
+function updateFillAndStrokeVarsAndStyle() {
+    updateFillAndStrokeVars();
+    updateFillAndStrokeDom();
+}
+
 function submitInput(draw) {
     globalWidth = parseInt(document.getElementById("widthText").innerText);
     globalHeight = parseInt(document.getElementById("heightText").innerText);
@@ -30,6 +51,8 @@ function submitInput(draw) {
     else if (!isFlow && !isAv) {
         globalFlag = "n";
     }
+
+    updateFillAndStrokeVars();
 
     // top rank
     if (datasetsWithStates.includes(fileName)) {

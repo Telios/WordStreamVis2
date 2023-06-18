@@ -1,5 +1,5 @@
 const initWidth = (window.innerWidth - 430) ? (window.innerWidth - 430) : 1250,
-    initHeight = 660,
+    initHeight = 705,
     initMinFont = 15,
     initMaxFont = 35,
     initFlag = "none";// none / fa/ f / a
@@ -13,7 +13,9 @@ var globalWidth = initWidth,
     globalFlag = initFlag,
     globalTop = initTop,
     globalData,
-    isRel = document.getElementById("rel").checked;
+    isRel = document.getElementById("rel").checked,
+    globalFill = document.getElementById("fillCheckbox").checked,
+    globalStroke = document.getElementById("strokeCheckbox").checked;
 
 var allW;
 

@@ -280,17 +280,32 @@ input:checked + .toggle:before {
     border-radius: 50%;
 }
 
-.flow {
+.fill {
     position: absolute;
     top: 310px;
     left: 30px;
     margin: 0;
 }
 
-.angleVariance{
+.stroke {
     position: absolute;
     white-space: nowrap;
     top: 310px;
+    left: 170px;
+    margin: 0;
+}
+
+.flow {
+    position: absolute;
+    top: 355px;
+    left: 30px;
+    margin: 0;
+}
+
+.angleVariance {
+    position: absolute;
+    white-space: nowrap;
+    top: 355px;
     left: 170px;
     margin: 0;
 }
@@ -299,23 +314,23 @@ input:checked + .toggle:before {
     stroke: transparent;
     position: absolute;
     left: 180px;
-    top: 400px;
+    top: 445px;
 }
 .rel {
     position: absolute;
     white-space: nowrap;
-    top: 355px;
+    top: 400px;
     left: 170px;
     margin: 0;
 }
 .submit {
     position: absolute;
-    top: 355px;
+    top: 400px;
     left: 30px;
 }
 .computeMetric {
     z-index: 100;
     position: absolute;
-    top: 424px;
+    top: 469px;
     left: 210px;
 }

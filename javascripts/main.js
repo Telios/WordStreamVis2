@@ -243,19 +243,19 @@ class WordStream {
             .style('fill', (d, i) => color(i))
             .attr({
                 "class": "curve",
-                'fill-opacity': 0.5,
                 stroke: 'black',
-                'stroke-width': 0,
                 topic: (d, i) => topics[i],
+                ...getCurrentFillAndStrokeStyle()
             });
     
         curve.attr("d", this.area)
             .style('fill', (d, i) => color(i))
             .attr({
-                'fill-opacity': 0.1,
+                'fill-opacity': 0,
                 stroke: 'black',
-                'stroke-width': 0.1,
+                'stroke-width': 0,
                 topic: (d, i) => topics[i],
+                ...getCurrentFillAndStrokeStyle()
             });
     
     
