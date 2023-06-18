@@ -93,6 +93,7 @@ function init_svg() {
             d3.select("#slider").call(slider);
 
             //updateMap();
+            loadSelectedStatesFromCookie();
         }
 
         if (datasetName === "Basketball") {
@@ -192,7 +193,6 @@ function init_svg() {
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
 
-        loadSelectedStatesFromCookie();
         getTopWordsPerState();
     });
 
