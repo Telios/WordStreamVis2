@@ -94,7 +94,7 @@ const REMAPPING_UCD = {
     "GR113-102": {name: "Kidney infections", category: "Other"},
     "GR113-103": {name: "Hyperplasia of prostate", category: "Other"},
     "GR113-104": {name: "Inflammation female pelvic organs", category: "Other"},
-    "GR113-105": {name: "Pregnancy, childbirth and the puerperium", category: "Other"},
+    "GR113-105": {name: "Pregnancy/childbirth", category: "Other"},
     "GR113-106": {name: "Abortions", category: "Other"},
     "GR113-107": {name: "O. pregnancy complications", category: "Other"},
     "GR113-108": {name: "Perinatal complications", category: "Other"},
