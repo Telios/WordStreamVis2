@@ -53,7 +53,17 @@ function addDatasetsOptions() {
 
 var spinner;
 
+function updateMapButtonVisibility() {
+    if (datasetsWithStates.includes(fileName)) {
+        d3.select("#mapButton").style("visibility", "visible");
+    } else {
+        d3.select("#mapButton").style("visibility", "hidden");
+    }
+}
+
 function loadData() {
+
+    updateMapButtonVisibility();
 
     // START: loader spinner settings ****************************
     var opts = {
