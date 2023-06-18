@@ -21,7 +21,7 @@ function init_svg() {
     var colorscheme = [
         //{ label: 'miscellaneous', color: '#781c9b' }
     ];
-    var min_year = 1999;
+    var min_year = 1980;
     var max_year = 2020;
 
     var slider = d3.sliderHorizontal()
@@ -34,7 +34,7 @@ function init_svg() {
             updateMap(val);
         });
 
-    const state_offsets = {
+    const state_offsets_lines = {
         "Vermont": {xOffset: -width * 0.0, yOffset: -height * 0.14},
         "New Hampshire": {xOffset: width * 0.09, yOffset: -height * 0.05},
         "Massachusetts": {xOffset: width * 0.08, yOffset: -height * 0.03},
@@ -47,6 +47,11 @@ function init_svg() {
         "Hawaii": {xOffset: width * 0.01, yOffset: height * 0.08},
     }
 
+    const state_offsets = {
+        "Michigan": {xOffset: width * 0.01, yOffset: 0},
+    }
+
+    const exempt_states_multiple_lines = ["California", "Florida", "Texas", "Idaho"]
 
     var states_and_most_important_word_per_year = {};
 
@@ -84,12 +89,14 @@ function init_svg() {
             drawLegend();
 
             states_and_most_important_word_per_year = topWords;
-            min_year = Math.min(...Object.keys(...Object.values(states_and_most_important_word_per_year)));
-            max_year = Math.max(...Object.keys(...Object.values(states_and_most_important_word_per_year)));
-            // TODO whyyy
+            let years = [...Object.keys(...Object.values(states_and_most_important_word_per_year))].map(x => parseInt(x));
+            min_year = Math.min(...years);
+            max_year = Math.max(...years);
             slider.min(min_year);
             slider.max(max_year);
             slider.value(min_year);
+            slider.tickValues(years);
+            slider.step(1);
             d3.select("#slider").call(slider);
 
             //updateMap();
@@ -139,7 +146,7 @@ function init_svg() {
             .data(topojson.feature(us, us.objects.states).features)
             .join("line")
             .filter(function (d) {
-                return Object.keys(state_offsets).includes(d.properties.name);
+                return Object.keys(state_offsets_lines).includes(d.properties.name);
             })
             .style("stroke", "black")
             .style("stroke-width", 2)
@@ -147,8 +154,8 @@ function init_svg() {
                     return {
                         x1: path.centroid(d)[0],
                         y1: path.centroid(d)[1],
-                        x2: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset - width * 0.005,
-                        y2: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
+                        x2: path.centroid(d)[0] + state_offsets_lines[d.properties.name].xOffset - width * 0.005,
+                        y2: path.centroid(d)[1] + state_offsets_lines[d.properties.name].yOffset
                     }
                 }
             );
@@ -158,7 +165,12 @@ function init_svg() {
             .data(topojson.feature(us, us.objects.states).features)
             .join("text")
             .attrs(function (d) {
-                if (Object.keys(state_offsets).includes(d.properties.name)) {
+                if (Object.keys(state_offsets_lines).includes(d.properties.name)) {
+                    return {
+                        x: path.centroid(d)[0] + state_offsets_lines[d.properties.name].xOffset,
+                        y: path.centroid(d)[1] + state_offsets_lines[d.properties.name].yOffset
+                    }
+                } else if (Object.keys(state_offsets).includes(d.properties.name)) {
                     return {
                         x: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset,
                         y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
@@ -172,7 +184,7 @@ function init_svg() {
             })
             .attr("dy", ".2em")
             .attr("text-anchor", function (d) {
-                return Object.keys(state_offsets).includes(d.properties.name) ? "left" : "middle";
+                return Object.keys(state_offsets_lines).includes(d.properties.name) ? "left" : "middle";
             })
             .attr("fill", "#ffffff")
             .attr("pointer-events", "none")
@@ -180,11 +192,11 @@ function init_svg() {
             .style("font-size", function (d) {
                 let scale = Math.sqrt(path.area(d)) / 5;
                 let width = path.bounds(d)[1][0] - path.bounds(d)[0][0];
-                if (Object.keys(state_offsets).includes(d.properties.name)) {
+                if (Object.keys(state_offsets_lines).includes(d.properties.name)) {
                     return 15 + "px";
                 }
                 return scale + "px";
-            })
+            });
 
 
         g.append("path")
@@ -218,28 +230,55 @@ function init_svg() {
     function wrap(text) {
         text.each(function () {
             var state = d3.select(this).data()[0];
-            var width = (path.bounds(state)[1][0] - path.bounds(state)[0][0]) * 0.9;
-
+            var width = (path.bounds(state)[1][0] - path.bounds(state)[0][0]) * 0.7;
+            var height = (path.bounds(state)[1][1] - path.bounds(state)[0][1]) * 0.7;
             var text = d3.select(this),
                 words = text.text().split(/\s+/).reverse(),
-                first_word = true,
                 word,
-                line = [],
+                line = "",
                 lineNumber = 0,
                 lineHeight = 1.3, // ems
                 x = text.attr("x"),
                 y = text.attr("y"),
                 font_size = text.style("font-size").substring(0, text.style("font-size").length - 2);
+                words_area = text.node().getComputedTextLength() * font_size;
+                if (words_area > path.area(state) * 0.5 && !Object.keys(state_offsets_lines).includes(state.properties.name)) {
+                    font_size *= 0.8;
+                }
             dy = 0; //parseFloat(text.attr("dy")),
+            text.style("font-size", font_size + "px");
             tspan = text.text(null)
                 .append("tspan")
                 .attr("x", x)
                 .attr("y", y)
                 .attr("dy", dy + "em");
-            if (Object.keys(state_offsets).includes(state.properties.name)) {
+            if (Object.keys(state_offsets_lines).includes(state.properties.name)) {
                 width = svg_width - text.attr("x");
             }
             while (word = words.pop()) {
+                // for every letter in the word
+                // join the letter to the line
+                // if the line is too long, remove the last letter and start new tspan add '-" to the end of the line
+                //
+                let letters = [...word];
+                letters.forEach((letter, index) => {
+                    line += letter;
+                    tspan.text(line);
+                    if (tspan.node().getComputedTextLength() > width) {
+                        line = line.substring(0, line.length - 1);
+                        line = index === 0 || letters[index - 1] === '-' ? line : line + "-";
+                        tspan.text(line);
+                        line = letter;
+                        tspan = text.append("tspan")
+                            .attr("x", x)
+                            .attr("y", y)
+                            .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                            .text(line);
+                    }
+                });
+                line += " ";
+
+                /*
                 line.push(word);
                 tspan.text(line.join(" "));
                 if (tspan.node().getComputedTextLength() > width && !first_word) {
@@ -253,9 +292,20 @@ function init_svg() {
                         .text(word);
                 }
                 first_word = false;
+                */
+
+            }
+            if (d3.hierarchy(text.node()).children.length > 2 && !exempt_states_multiple_lines.includes(state.properties.name)) {
+                text.selectAll("tspan")
+                    .attr("y", function(d) {
+                        let height = path.bounds(state)[1][1] - path.bounds(state)[0][1];
+                        let offset = height * 0.2;
+                        return path.centroid(d)[1] - offset;
+                    })
             }
 
         });
+
     }
 
     function click(d, i) {
@@ -307,6 +357,32 @@ function init_svg() {
             if (Object.keys(stateData).includes("" + year)) {
                 data_of_year_per_state[stateName] = stateData[year];
             }
+        });
+        g.selectAll("text")
+            .attrs(function(d) {
+                if (Object.keys(state_offsets_lines).includes(d.properties.name)) {
+                    return {
+                        x: path.centroid(d)[0] + state_offsets_lines[d.properties.name].xOffset,
+                        y: path.centroid(d)[1] + state_offsets_lines[d.properties.name].yOffset
+                    }
+                } else if (Object.keys(state_offsets).includes(d.properties.name)) {
+                    return {
+                        x: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset,
+                        y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
+                    }
+                } else {
+                    return {
+                        x: path.centroid(d)[0],
+                        y: path.centroid(d)[1]
+                    }
+                }
+        }).style("font-size", function (d) {
+            let scale = Math.sqrt(path.area(d)) / 5;
+            let width = path.bounds(d)[1][0] - path.bounds(d)[0][0];
+            if (Object.keys(state_offsets_lines).includes(d.properties.name)) {
+                return 15 + "px";
+            }
+            return scale + "px";
         });
 
         g.selectAll("text")
