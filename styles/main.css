@@ -120,7 +120,7 @@ a.button:hover{
 
 .metricSVG {
     position: absolute;
-    top: 509px;
+    top: 554px;
     background-color: white;
     border: 1px solid #cbcbcb;
     padding: 10px;
@@ -146,7 +146,7 @@ a.button:hover{
     font: 13px sans-serif;
     pointer-events: none;
     left: 43px;
-    top: 560px;
+    top: 605px;
     z-index: 1;
 }
 .metTable table{
