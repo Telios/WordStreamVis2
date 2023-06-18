@@ -197,7 +197,10 @@ function init_svg() {
     });
 
 
-    function mouseover(d) {
+    function mouseover(d, geoJsonFeature) {
+        if (!Object.keys(states_and_most_important_word_per_year).includes(geoJsonFeature.properties.name)) {
+            return;
+        }
         d3.select(this)
             .transition()
             .duration(200)
@@ -256,10 +259,16 @@ function init_svg() {
     }
 
     function click(d, i) {
+        const clickedStateName = i.properties.name;
+
+        if (!Object.keys(states_and_most_important_word_per_year).includes(clickedStateName)) {
+            return;
+        }
+
         if (d3.select(this).attr("stroke") === "#10efd5") {
             d3.select(this).attr("stroke", "rgba(255,255,255,0)")
                 .attr("stroke-width", "1px");
-            selectedStates = selectedStates.filter(state => state !== i.properties.name);
+            selectedStates = selectedStates.filter(state => state !== clickedStateName);
         } else {
             if (selectedStates.length === 4) {
                 alert("You can't select more than 4 states");
@@ -269,7 +278,7 @@ function init_svg() {
                 .attr("stroke", "#10efd5")
                 .attr("stroke-width", "4px")
                 .attr("stroke-linejoin", "round");
-            selectedStates.push(i.properties.name);
+            selectedStates.push(clickedStateName);
         }
         console.log(selectedStates);
         document.cookie = "selected_states=" + JSON.stringify(selectedStates);
