@@ -295,7 +295,9 @@ function init_svg() {
         Object.entries(states_and_most_important_word_per_year).forEach(state => {
             const stateName = state[0];
             const stateData = state[1];
-            data_of_year_per_state[stateName] = stateData[year];
+            if (Object.keys(stateData).includes("" + year)) {
+                data_of_year_per_state[stateName] = stateData[year];
+            }
         });
 
         g.selectAll("text")
