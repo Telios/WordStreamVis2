@@ -56,7 +56,7 @@ function init_svg() {
             // TODO dataset cookie missing, cannot show any words - what to do?
             throw new Error("dataset cookie missing - no dataset selected, cannot show words");
         }
-        
+
         function getTopWordsObject(rawData, datasetGen, stateAccessor) {
             const states = getUniqueValues(rawData.map(stateAccessor));
             const datasetsPerState = loadDatasetsForStates(rawData, states, datasetGen, stateAccessor);
@@ -78,7 +78,9 @@ function init_svg() {
 
             const categories = getUniqueValues(rawData.map(datasetGen.categoryAccessor));
 
-            colorscheme = categories.map((entry, i) => {return {label: entry, color: d3_colors[i]}});
+            colorscheme = categories.map((entry, i) => {
+                return {label: entry, color: d3_colors[i]}
+            });
             drawLegend();
 
             states_and_most_important_word_per_year = topWords;
@@ -106,7 +108,7 @@ function init_svg() {
 
     function loadSelectedStatesFromCookie() {
         let selectedStatesFromCookie = readSelectedStateCookie();
-        
+
         selectedStatesFromCookie.forEach(selectedState => {
             let selection = d3.selectAll("#" + selectedState.replace(" ", ""));
             click.call(selection.node(), undefined, selection.data()[0]);
@@ -135,15 +137,18 @@ function init_svg() {
             .selectAll("line")
             .data(topojson.feature(us, us.objects.states).features)
             .join("line")
-            .filter(function(d) { return Object.keys(state_offsets).includes(d.properties.name);})
+            .filter(function (d) {
+                return Object.keys(state_offsets).includes(d.properties.name);
+            })
             .style("stroke", "black")
             .style("stroke-width", 2)
-            .attrs(function(d) {
-                return {
-                x1: path.centroid(d)[0],
-                y1: path.centroid(d)[1],
-                x2: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset - width * 0.005,
-                y2: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset}
+            .attrs(function (d) {
+                    return {
+                        x1: path.centroid(d)[0],
+                        y1: path.centroid(d)[1],
+                        x2: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset - width * 0.005,
+                        y2: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
+                    }
                 }
             );
 
@@ -151,25 +156,27 @@ function init_svg() {
             .selectAll("text")
             .data(topojson.feature(us, us.objects.states).features)
             .join("text")
-            .attrs(function(d) {
+            .attrs(function (d) {
                 if (Object.keys(state_offsets).includes(d.properties.name)) {
-                return {
-                x: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset,
-                y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
-                } } else {
-                return {
-                x: path.centroid(d)[0],
-                y: path.centroid(d)[1]
-                }}
+                    return {
+                        x: path.centroid(d)[0] + state_offsets[d.properties.name].xOffset,
+                        y: path.centroid(d)[1] + state_offsets[d.properties.name].yOffset
+                    }
+                } else {
+                    return {
+                        x: path.centroid(d)[0],
+                        y: path.centroid(d)[1]
+                    }
+                }
             })
             .attr("dy", ".2em")
-            .attr("text-anchor", function(d) {
-                return Object.keys(state_offsets).includes(d.properties.name) ? "left": "middle";
+            .attr("text-anchor", function (d) {
+                return Object.keys(state_offsets).includes(d.properties.name) ? "left" : "middle";
             })
             .attr("fill", "#ffffff")
             .attr("pointer-events", "none")
             .text(d => d.properties.name)
-            .style("font-size", function(d) {
+            .style("font-size", function (d) {
                 let scale = Math.sqrt(path.area(d)) / 5;
                 let width = path.bounds(d)[1][0] - path.bounds(d)[0][0];
                 if (Object.keys(state_offsets).includes(d.properties.name)) {
@@ -184,7 +191,7 @@ function init_svg() {
             .attr("stroke", "#fff")
             .attr("stroke-linejoin", "round")
             .attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b)));
-        
+
         loadSelectedStatesFromCookie();
         getTopWordsPerState();
     });
@@ -220,12 +227,12 @@ function init_svg() {
                 x = text.attr("x"),
                 y = text.attr("y"),
                 font_size = text.style("font-size").substring(0, text.style("font-size").length - 2);
-                dy = 0; //parseFloat(text.attr("dy")),
-                tspan = text.text(null)
-                    .append("tspan")
-                    .attr("x", x)
-                    .attr("y", y)
-                    .attr("dy", dy + "em");
+            dy = 0; //parseFloat(text.attr("dy")),
+            tspan = text.text(null)
+                .append("tspan")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("dy", dy + "em");
             if (Object.keys(state_offsets).includes(state.properties.name)) {
                 width = svg_width - text.attr("x");
             }
@@ -344,7 +351,7 @@ function init_svg() {
         if (d3.select("rect[title='start_animation_button']").attr("played_button") === "true") return;
         d3.select("rect[title='start_animation_button']").attr("played_button", "true");
         var i = min_year;
-        var interval = setInterval(function() {
+        var interval = setInterval(function () {
             updateMap(i);
             slider.value(i);
             i++;
@@ -367,7 +374,7 @@ function init_svg() {
             fill: "#fff",
             title: "start_animation_button",
             played_button: "false",
-            })
+        })
         .on("click", startAnimation);
 
     svg.select("g[type='button']")
@@ -376,9 +383,9 @@ function init_svg() {
             x: width * 0.9 + width * 0.0045,
             y: height * 0.87 + height * 0.03,
             font: `${height * 0.03}px sans-serif`,
-            "pointer-events": "none"})
+            "pointer-events": "none"
+        })
         .text("Animate");
-
 
 
     d3.select("svg").append("g").attr("id", "slider")
