@@ -80,7 +80,6 @@ function loadData() {
 
         if (fileName === "Basketball") {
             //console.log("selected basketball dataset, brace yourselves");
-            categories = ["Guard", "Forward", "Center"];
             loadBasketballDataset(draw, initTop, selectedCountries);
         } else if (fileName === "UCD") {
             //console.log("selected UCD dataset, brace yourselves");
@@ -230,11 +229,14 @@ class WordStream {
             });
         // draw curves
         var topics = boxes.topics;
+
     
         var curve = this.container.selectAll('.curve').data(boxes.layers);
     
         curve.exit().remove();
-    
+
+        //TODO change here if we want background and stroke
+
         curve.enter()
             .append('path')
             .attr('d', this.area)
@@ -250,9 +252,9 @@ class WordStream {
         curve.attr("d", this.area)
             .style('fill', (d, i) => color(i))
             .attr({
-                'fill-opacity': 0,
+                'fill-opacity': 0.1,
                 stroke: 'black',
-                'stroke-width': 0,
+                'stroke-width': 0.1,
                 topic: (d, i) => topics[i],
             });
     
@@ -353,7 +355,7 @@ class WordStream {
                 "class": "textData",
                 'font-family': this.font,//TODO
                 'font-size': (d) => d.fontSize,
-                "fill": (d) => color(categories.indexOf(d.topic)),
+                "fill": (d) => color(topics.indexOf(d.topic)),
                 "fill-opacity": (d) => opacity(d.sudden),
                 'text-anchor': 'middle',
                 'alignment-baseline': 'middle',
