@@ -230,7 +230,6 @@ class WordStream {
         // draw curves
         var topics = boxes.topics;
 
-    
         var curve = this.container.selectAll('.curve').data(boxes.layers);
     
         curve.exit().remove();
@@ -251,9 +250,7 @@ class WordStream {
         curve.attr("d", this.area)
             .style('fill', (d, i) => color(i))
             .attr({
-                'fill-opacity': 0,
                 stroke: 'black',
-                'stroke-width': 0,
                 topic: (d, i) => topics[i],
                 ...getCurrentFillAndStrokeStyle()
             });
@@ -686,7 +683,7 @@ class MultiWordStream {
         });
         
         let dates = dataByGroup[groups[0]].map(row => row.date); //for x axis
-        let topics = Object.keys(dataByGroup[groups[0]][0].words); //for legend
+        let topics = Object.keys(dataByGroup[groups[0]][0].words).sort(); //for legend
 
         let gridHeight = globalHeight - (this.margins.top + this.margins.bottom + this.axisPadding + this.legendHeight); //for vertical lines
         let legendY = globalHeight - (this.margins.top + this.legendHeight + this.legendOffset);

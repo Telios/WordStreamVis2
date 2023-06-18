@@ -76,7 +76,7 @@ function init_svg() {
             let stateAccessor = getStateAccessor(datasetName);
             const topWords = getTopWordsObject(rawData, datasetGen, stateAccessor);
 
-            const categories = getUniqueValues(rawData.map(datasetGen.categoryAccessor));
+            const categories = getUniqueValues(rawData.map(datasetGen.categoryAccessor)).sort();
 
             colorscheme = categories.map((entry, i) => {
                 return {label: entry, color: d3_colors[i]}
