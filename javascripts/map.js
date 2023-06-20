@@ -79,7 +79,23 @@ function init_svg() {
         function handleDataArrived(rawData) {
             const datasetGen = getDatasetGenerator(datasetName);
             let stateAccessor = getStateAccessor(datasetName);
-            const topWords = getTopWordsObject(rawData, datasetGen, stateAccessor);
+            let topWords = getTopWordsObject(rawData, datasetGen, stateAccessor);
+
+            if (datasetName === "UCD (short)") {
+                topWords = Object.fromEntries(
+                    Object.entries(topWords)
+                        .map(stateEntry => [stateEntry[0],
+                            Object.fromEntries(Object.entries(stateEntry[1])
+                                .filter(dateEntry => dateEntry[0] < 2020))])
+                );
+            } else if (datasetName === "NNDSS (short)") {
+                topWords = Object.fromEntries(
+                    Object.entries(topWords)
+                        .map(stateEntry => [stateEntry[0],
+                            Object.fromEntries(Object.entries(stateEntry[1])
+                                .filter(dateEntry => dateEntry[0] < 2020))])
+                );
+            }
 
             const categories = getUniqueValues(rawData.map(datasetGen.categoryAccessor)).sort();
 
@@ -105,9 +121,9 @@ function init_svg() {
 
         if (datasetName === "Basketball") {
             d3.json("data/basketball.json").then(data => handleDataArrived(data["per_state_counts"]));
-        } else if (datasetName === "UCD") {
+        } else if (datasetName === "UCD" || datasetName === "UCD (short)") {
             d3.tsv("data/UCD_1999_2020.txt").then(data => handleDataArrived(data));
-        } else if (datasetName === "NNDSS") {
+        } else if (datasetName === "NNDSS" || datasetName === "NNDSS (short)") {
             d3.tsv("data/nndss_2016_2020_clean.txt").then(data => handleDataArrived(data));
         }
     }
